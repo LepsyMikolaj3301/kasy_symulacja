@@ -6,3 +6,5 @@ Potrzeba statystyk dotyczacych:
 ! do opisania !
 
 """
+
+import scipy
