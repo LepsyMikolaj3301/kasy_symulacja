@@ -19,7 +19,7 @@ Przebieg symulacji (szczegółowy):
         
         Deportacja klienta xd
     
-            
+TICK w PĘTLI = 1 minuta            
 
 
 Importuje:
@@ -34,6 +34,8 @@ Zawiera:
 Notes:
      * architektura potrzebna do przypisywania wygen. klientów do kolejek
      dla różnych klas *
+
+    CZY WPROWADZENIE TICK = 1 sekunda MA SENS?
 
 DONE:
     gówno
@@ -53,3 +55,15 @@ def odczyt_pliku_ster() -> dict:
         parametry = json.load(file)
         return parametry
 
+
+
+
+
+
+
+def main():
+    pass
+
+
+if __name__ == "__main__":
+    main()
