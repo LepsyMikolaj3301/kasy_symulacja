@@ -104,7 +104,7 @@ class KasaSamoobslugowa:
     
     def odczekaj_tick(self):
         # Ta funkcja nam zwróci wartość True, jeżeli klient został obsłużony
-        if self.realny_czas == 0:
+        if self.realny_czas <= 0:
             self.kasa_done = True
         # Inaczej, odczekaj jeden tick
         self.realny_czas -= 1
@@ -115,7 +115,6 @@ class ZbiorKasySamoobslugowe:
         self.ilosc_kas = ilosc_kas
         self.zajete_kasy = 0
         self.ilosc_obsluzonych_klient = 0
-
         self.lista_kas = []
 
     def klienci_do_kolejki(self, klienci: list):
@@ -123,16 +122,26 @@ class ZbiorKasySamoobslugowe:
             self.kolejka.put(klient)
     
     def aktualizacja_kas(self):
-        # Przydzielanie klientow z kolejki do kasy
-        while self.zajete_kasy < self.ilosc_kas + 1:
-            self.lista_kas.append(KasaSamoobslugowa(self.kolejka.get()))
-            # DO DOKOŃCZENIA I PRZEGLĄDNIĘCIA
-
+        """
+        Ta metoda:
+        1. Usuwa klientów którzy skonczyli zakupy
+        2. Dodaje klientów do pustych kas
+        """
+        
+        # ponizsza petla sprawdza czy klient posłużyl sie kasą i zapisuje informacje
         for i, kasa in enumerate(self.lista_kas):
             if kasa.kasa_done:
                 self.lista_kas.pop(i)
-                self.ilosc_kas -= 1
+                self.zajete_kasy -= 1
                 self.ilosc_obsluzonych_klient += 1
+
+        # Przydzielanie klientow z kolejki do kasy
+        while self.zajete_kasy < self.ilosc_kas + 1:
+            # Do miejsca z kasami, zostaje dodana kasa Samoobsługowa i do niej przydzielony zostaje klient
+            # Czyli za każdym razem tworzymi nową instancję
+            self.lista_kas.append(KasaSamoobslugowa(self.kolejka.get()))
+            self.zajete_kasy += 1
+            
         
         
 
@@ -153,10 +162,23 @@ class KasaObslugowa:
         # GIGA WAŻNE 2 - LICZNIK, ILE TICKÓW ZOSTAŁO DO PRZECZEKANIA
         self.realny_czas = self.przewidywany_czas_obslugi 
         
+        # WARTOŚĆ MÓWIĄCA NAM CZY KLIENT SKONCZYL OBSLUGIWANIE KASY
+        self.kasa_done = False
+
     def odczekaj_tick(self):
         
-        if self.realny_czas == 0:
-            return True
+        if self.realny_czas <= 0:
+            self.kasa_done = True
         
         self.realny_czas -= 1
 
+class ZbiorKasyObslugowe:
+    def __init__(self, ilosc_kas):
+        self.ilosc_kas = ilosc_kas
+        self.ilosc_obsluzonych_klient = 0
+        self.lista_kasa_x_kolejka = [(KasaObslugowa, Queue) for _ in range(ilosc_kas)]
+        
+
+
+    def klienci_do_kolejki(self, klienci: list):
+        for 
