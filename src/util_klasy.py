@@ -69,8 +69,7 @@ class Klient:
     Klasa będzie służyła jako bardziej kontener informacji ( struct ) 
     """
 
-    def __init__(self, wiek, num_produkt,
-                 t_na_prod: float, platnosc_karto: bool):
+    def __init__(self, wiek, num_produkt, t_na_prod: float, platnosc_karto: bool):
         """
         Args:
             wiek (int): Wiek podawany z rozkładu normalnego dla demografii miast
@@ -85,73 +84,89 @@ class Klient:
 
 
 class KasaSamoobslugowa:
-    def __init__(self, klient: Klient):
+    def __init__(self):
+        
+        # lista zawierająca czase obsłużonych klientów
+        self.lista_czasow_obslugi = []
+        # GIGA WAŻNE - LICZNIK, ILE TICKÓW ZOSTAŁO DO PRZECZEKANIA
+        self.realny_czas_counter = 0
+
+        # WARTOŚĆ MÓWIĄCA NAM CZY KLIENT OBSŁUGUJE KASE
+        self.is_with_klient = False
+
+    def przyjmij_klienta(self, klient: Klient):
+        # Resetujemy wartość, czyli nowy klient jest obsługiwany
+        self.is_with_klient = True
+
         self.initial_ilosc_prod = klient.num_produkt
         self.t_na_produkt = klient.t_na_prod
 
+        def checkout_time() -> float:
+            return STALA_PAKOWANIA * self.initial_ilosc_prod + STALA_PLT_KARTO
+
         # czas po zakończeniu kasowania
-        self.kasa_checkout = self.checkout_time()
-
+        self.kasa_checkout = checkout_time()
         # GIGA WAŻNE - OBLICZENIE WSTĘPNE OBSŁUŻENIA KASY:
-        self.przewidywany_czas_obslugi = round(
-            self.t_na_produkt * self.initial_ilosc_prod + self.kasa_checkout)
-        # GIGA WAŻNE 2 - LICZNIK, ILE TICKÓW ZOSTAŁO DO PRZECZEKANIA
-        self.realny_czas = self.przewidywany_czas_obslugi
+        self.czas_obslugi = round(self.t_na_produkt * self.initial_ilosc_prod + self.kasa_checkout)
 
-        # WARTOŚĆ MÓWIĄCA NAM CZY KLIENT SKONCZYL OBSLUGIWANIE KASY
-        self.kasa_done = False
+        self.lista_czasow_obslugi.append(self.czas_obslugi)
 
-    def checkout_time(self):
-        return STALA_PAKOWANIA * self.initial_ilosc_prod + STALA_PLT_KARTO
-
+        # nadanie counterowi nowego czasu, nowego klienta
+        self.realny_czas_counter = self.czas_obslugi
+    
     def odczekaj_tick(self):
         # Ta funkcja nam zwróci wartość True, jeżeli klient został obsłużony
-        if self.realny_czas <= 0:
-            self.kasa_done = True
+        if self.realny_czas_counter <= 0:
+            self.is_with_klient = False
         # Inaczej, odczekaj jeden tick
-        self.realny_czas -= 1
+        self.realny_czas_counter -= 1
 
 
 class ZbiorKasySamoobslugowe:
     def __init__(self, ilosc_kas):
         self.kolejka = Queue()
+        self.lista_kas = [KasaSamoobslugowa() for _ in range(ilosc_kas)] 
         self.ilosc_kas = ilosc_kas
-        self.zajete_kasy = 0
-        self.ilosc_obsluzonych_klient = 0
-        self.lista_kas = []
 
-    def klienci_do_kolejki(self, klienci: list):
-        for klient in klienci:
-            self.kolejka.put(klient)
+    def klienci_do_kolejki(self, klient: Klient):
+        self.kolejka.put(klient)
+
+    def odczekaj_tick_wszyscy(self):
+        for i in range(self.ilosc_kas):
+            self.lista_kas[i].odczekaj_tick()
+
 
     def aktualizacja_kas(self):
         """
         Ta metoda:
-        1. Usuwa klientów którzy skonczyli zakupy
-        2. Dodaje klientów do pustych kas
+        1. Sprawdza czy kasa jest pusta, jak jest - dodaje klienta
         """
-
-        # ponizsza petla sprawdza czy klient posłużyl sie kasą i zapisuje informacje
         for i, kasa in enumerate(self.lista_kas):
-            if kasa.kasa_done:
-                self.lista_kas.pop(i)
-                self.zajete_kasy -= 1
-                self.ilosc_obsluzonych_klient += 1
-
-        # Przydzielanie klientow z kolejki do kasy
-        while self.zajete_kasy < self.ilosc_kas + 1:
-            # Do miejsca z kasami, zostaje dodana kasa Samoobsługowa i do niej przydzielony zostaje klient
-            # Czyli za każdym razem tworzymi nową instancję
-            self.lista_kas.append(KasaSamoobslugowa(self.kolejka.get()))
-            self.zajete_kasy += 1
+            if not kasa.is_with_klient:
+                self.lista_kas[i].przyjmij_klienta(self.kolejka.get())
+        
 
 # !! 
 # Nie tworzymy osobnych instancji - zrobienie nowych metod przyjmij_klienta() które obsługują klienta i iterują informacje
 
 class KasaObslugowa:
     def __init__(self):
-        self.initial_ilosc_prod = klient.num_produkt
+
         self.t_na_produkt = STALA_KASOWANIA_EKSPERT
+        
+        self.lista_czasow_obslugi = []
+        # GIGA WAŻNE - LICZNIK, ILE TICKÓW ZOSTAŁO DO PRZECZEKANIA
+        self.realny_czas_counter = 0
+
+        # WARTOŚĆ MÓWIĄCA NAM CZY KLIENT OBSLUGUJE KASE
+        self.is_with_klient = False
+
+    def przyjmij_klienta(self, klient: Klient):
+
+        # Resetujemy wartość, czyli nowy klient jest obsługiwany
+        self.is_with_klient = True
+        
+        self.initial_ilosc_prod = klient.num_produkt
         self.rodzaj_platnosci = STALA_PLT_KARTO if klient.platnosc_karto else STALA_PLT_GOTOWKO
 
         # roznica czyli czy pakowanie zajmie mi dłużej niż kasowanie kasjerki
@@ -161,30 +176,57 @@ class KasaObslugowa:
         self.kasa_checkout = self.rodzaj_platnosci + (0 if roznica <= 0 else roznica)
 
         # GIGA WAŻNE - OBLICZENIE WSTĘPNE OBSŁUŻENIA KASY:
-        self.przewidywany_czas_obslugi = round(self.t_na_produkt * self.initial_ilosc_prod + self.kasa_checkout)
-        # GIGA WAŻNE 2 - LICZNIK, ILE TICKÓW ZOSTAŁO DO PRZECZEKANIA
-        self.realny_czas = self.przewidywany_czas_obslugi
+        self.czas_obslugi = round(self.t_na_produkt * self.initial_ilosc_prod + self.kasa_checkout)
 
-        # WARTOŚĆ MÓWIĄCA NAM CZY KLIENT SKONCZYL OBSLUGIWANIE KASY
-        self.kasa_done = False
+        self.lista_czasow_obslugi.append(self.czas_obslugi)
+
+        # nadanie counterowi nowego czasu, nowego klienta
+        self.realny_czas_counter = self.czas_obslugi
+
 
     def odczekaj_tick(self):
 
-        if self.realny_czas <= 0:
-            self.kasa_done = True
+        if self.realny_czas_counter <= 0:
+            self.is_with_klient = False
 
-        self.realny_czas -= 1
+        self.realny_czas_counter -= 1
 
 
 class ZbiorKasyObslugowe:
     def __init__(self, ilosc_kas):
         self.ilosc_kas = ilosc_kas
         self.ilosc_obsluzonych_klient = 0
+
+        # TWORZENIE LIST PAR: ( KASA, KOLEJKA )
         self.lista_kasa_x_kolejka = [(KasaObslugowa(), Queue())
                                      for _ in range(ilosc_kas)]
 
-    # def klienci_do_kolejki(self, klienci: list):
+    def klienci_do_kolejki(self, klient: Klient):
 
+        # PRZYDZIELAMY KLIENTA DO NAJKRÓTSZEJ KOLEJKI
+
+        # tymczasowa lista z długościami kolejek
+        lista_dlg_kolejek = [kasa_kolejka[1].qsize() for kasa_kolejka in self.lista_kasa_x_kolejka]
+        # index najmniejszej wartości z lista_dlg_kolejek
+        index_min = min(range(len(lista_dlg_kolejek)), key=lista_dlg_kolejek.__getitem__)
+
+        # Przydziel klienta do najkrótszej kolejki
+        self.lista_kasa_x_kolejka[index_min][1].put(klient)
+
+    def odczekaj_tick_wszyscy(self):
+        for i in range(self.ilosc_kas):
+            self.lista_kasa_x_kolejka[i][0].odczekaj_tick()
+
+    def aktualizacja_kas(self):
+        """
+        Ta metoda:
+        1. Sprawdza czy kasa jest pusta, jak jest - dodaje klienta
+        """
+        for i, kasa_kolejka in enumerate(self.lista_kasa_x_kolejka):
+            if not kasa_kolejka[0].is_with_klient:
+                self.lista_kasa_x_kolejka[i][0].przyjmij_klienta(self.lista_kasa_x_kolejka[i][1].get())
+
+            
 
 def test():
     """
