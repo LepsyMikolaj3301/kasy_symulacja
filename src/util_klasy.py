@@ -118,33 +118,10 @@ class Klient:
         self.wielk_zakupow = random_groceries_size(self.wiek)
         self.num_produkt = random_groceries_amount(self.wielk_zakupow)
         self.t_na_prod = czas_skan_bez_ujemnych()
+        # DO DODANIA FUNKCJA PŁATNOŚĆ KARTO
         self.platnosc_karto = platnosc_karto
 
 
-def generate_parametry() -> list:
-    """
-    funkcja do generowania klienta na początku Iteracji
-
-    Args:
-        num_klient (int, optional): liczba klientów do wygenerowania. Defaults to 0.
-
-    Returns:
-        list: lista wygenerowanych klientów ( albo pusta lista )
-    """
-
-    # Tu generowanie z rozkładów odpowiednich parametrów
-
-    # Tu osobno wygenerowanie przypadku, gdy zakładamy, że wszyscy płacą kartą
-    if wszyscy_karto:
-        platnosc_karto = True
-    else:
-        pass  # to do wywalenia gdy poniższe gotowe
-        # platnosc_karto = ... i tam jakiś rozkład XD
-
-    # Tu stworzenie obiektów jako listy klientów z zakupami
-
-    # nowi_klienci = [Klient( . . . ) for _ in range(num_klient)]
-    # return nowi_klienci
 
 
 class KasaSamoobslugowa:
