@@ -29,7 +29,7 @@ TODO:
 """
 import random
 from queue import Queue
-import numpy as np
+from numpy import normal
 
 # STAŁE GLOBALNE
 STALA_PAKOWANIA = 0.025  # mniej więcej określenie, ile pakuje się jeden produkt
@@ -108,7 +108,7 @@ class Klient:
             number_generated = False
 
             while not number_generated:
-                czas_skan = np.random.normal(4.5, 1)
+                czas_skan = normal(4.5, 1)
                 if czas_skan >= 2:  # Akceptujemy tylko wartości > 2, bo klienci szybciej nie skanują
                     number_generated = True
 
