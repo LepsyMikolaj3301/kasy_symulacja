@@ -19,7 +19,7 @@ Przebieg symulacji (szczegółowy):
         
         Deportacja klienta xd
     
-TICK w PĘTLI = 1 minuta            
+TICK w PĘTLI = 1 sekunda            
 
 
 Importuje:

@@ -145,24 +145,23 @@ class ZbiorKasySamoobslugowe:
             self.lista_kas.append(KasaSamoobslugowa(self.kolejka.get()))
             self.zajete_kasy += 1
 
+# !! 
+# Nie tworzymy osobnych instancji - zrobienie nowych metod przyjmij_klienta() które obsługują klienta i iterują informacje
 
 class KasaObslugowa:
-    def __init__(self, klient: Klient):
+    def __init__(self):
         self.initial_ilosc_prod = klient.num_produkt
         self.t_na_produkt = STALA_KASOWANIA_EKSPERT
         self.rodzaj_platnosci = STALA_PLT_KARTO if klient.platnosc_karto else STALA_PLT_GOTOWKO
 
         # roznica czyli czy pakowanie zajmie mi dłużej niż kasowanie kasjerki
-        roznica = (STALA_PAKOWANIA * self.initial_ilosc_prod) - \
-            (self.t_na_produkt * self.initial_ilosc_prod)
+        roznica = (STALA_PAKOWANIA * self.initial_ilosc_prod) - (self.t_na_produkt * self.initial_ilosc_prod)
 
         # czas po zakończeniu kasowania
-        self.kasa_checkout = self.rodzaj_platnosci + \
-            (0 if roznica <= 0 else roznica)
+        self.kasa_checkout = self.rodzaj_platnosci + (0 if roznica <= 0 else roznica)
 
         # GIGA WAŻNE - OBLICZENIE WSTĘPNE OBSŁUŻENIA KASY:
-        self.przewidywany_czas_obslugi = round(
-            self.t_na_produkt * self.initial_ilosc_prod + self.kasa_checkout)
+        self.przewidywany_czas_obslugi = round(self.t_na_produkt * self.initial_ilosc_prod + self.kasa_checkout)
         # GIGA WAŻNE 2 - LICZNIK, ILE TICKÓW ZOSTAŁO DO PRZECZEKANIA
         self.realny_czas = self.przewidywany_czas_obslugi
 
@@ -181,7 +180,16 @@ class ZbiorKasyObslugowe:
     def __init__(self, ilosc_kas):
         self.ilosc_kas = ilosc_kas
         self.ilosc_obsluzonych_klient = 0
-        self.lista_kasa_x_kolejka = [(KasaObslugowa, Queue)
+        self.lista_kasa_x_kolejka = [(KasaObslugowa(), Queue())
                                      for _ in range(ilosc_kas)]
 
     # def klienci_do_kolejki(self, klienci: list):
+
+
+def test():
+    """
+    DO TESTOWANIA
+    """
+
+if __name__ == "__main__":
+    test()
