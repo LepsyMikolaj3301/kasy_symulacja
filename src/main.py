@@ -42,9 +42,9 @@ DONE:
 
 
 TODO:
-    - WIZUALIZACJA I UI W CMDku ( pretty print ) !!!
+    - WIZUALIZACJA I UI W CMDku ( pretty print ) !!! !!!!!
     - glowna petla
-    - 
+    - losowanie czasu przyjścia nowego klienta
 """
 
 import json
@@ -52,9 +52,12 @@ import util_klasy as uk
 
 
 def odczyt_pliku_ster() -> dict:
-    with open('plik_ster.json', 'r') as file:
+
+    with open(r'rsc\\plik_ster.json', 'r') as file:
         parametry = json.load(file)
         return parametry
+    
+
 
 def losuj_czas_nowy_klient(ranga_dnia: int):
     """ TA FUNKCJA LOSUJE CZAS MIĘDZY 'PRZYCHODZENIEM' NOWYCH KLIENTÓW DO SKLEPU
@@ -77,29 +80,53 @@ def losuj_czas_nowy_klient(ranga_dnia: int):
             pass
         
 
+      
 class Symulacja:
 
-    
-
     def __init__(self):
-        pass
+        self.params = odczyt_pliku_ster()
 
-    
-    def symulacja():
+      
+
+    def symulacja(self):
         """
         GLOWNA PETLA SYMULACJI
+
+        przebieg:
+
+            1. Inicjalizacja
+            2. PETLA: 
+                a. Sprawdzenie czas_for_klient (if 0: stworzenie klienta Klient(), dodanie do kolejki oraz wylosowanie nowego czas_for_klient)
+                b. Wykonanie TICKu
+                c. wyświetlenie wyników
+            3. Zapisanie wyników i wyświetlenie wyników końcowych
+
         """
+        
+
+        
+            
+
+        pass
+
+# Informacje o symulacji będą zapisywane w pliku JSON
+def zapis_sym_json(sym_object: Symulacja):
+    with open(r'rsc\\zapis_symulacji.json', 'a') as sym_file:
+          json.dump(vars(sym_object), sym_file, indent=6)
+    
 
 
 
 
 
 
-
+def test():
+    param = odczyt_pliku_ster()
+    print(param)
 
 def main():
     pass
 
 
 if __name__ == "__main__":
-    main()
+    test()

@@ -25,11 +25,11 @@
 
 TODO:
 - dodanie stałej płacenia kartą i gotówką
-- napisanie klas kolejkowo-zbiorowych      
+- dodanie zapisywania zebranych danych oraz integracja w main.py  
 """
 import random
 from queue import Queue
-from numpy import normal
+from numpy.random import normal
 
 # STAŁE GLOBALNE
 STALA_PAKOWANIA = 0.025  # mniej więcej określenie, ile pakuje się jeden produkt
@@ -43,8 +43,7 @@ class Klient:
     Klasa będzie służyła jako bardziej kontener informacji ( struct )
     """
 
-    def __init__(self, wiek, num_produkt,
-                 t_na_prod: float, platnosc_karto: bool):
+    def __init__(self, param):
         """
         Args:
             wiek (int): Wiek podawany z rozkładu normalnego dla demografii miast
@@ -113,15 +112,22 @@ class Klient:
                     number_generated = True
 
             return czas_skan
+        if param:
+            self.wiek = param['wiek']
+            self.num_produkt = param['num_produkt']
+            self.t_na_prod = param['t_na_prod']
+            self.platnosc_karto = param['platnosc_karto']
+        else:
+            self.wiek = random_age()
+            self.wielk_zakupow = random_groceries_size(self.wiek)
+            self.num_produkt = random_groceries_amount(self.wielk_zakupow)
+            self.t_na_prod = czas_skan_bez_ujemnych()
+            self.platnosc_karto = True # DO ZMIANY
 
-        self.wiek = random_age()
-        self.wielk_zakupow = random_groceries_size(self.wiek)
-        self.num_produkt = random_groceries_amount(self.wielk_zakupow)
-        self.t_na_prod = czas_skan_bez_ujemnych()
+        # NIE DZIALA WIEC ROZWIAZANIE TYMCZASOWE:
+        
         # DO DODANIA FUNKCJA PŁATNOŚĆ KARTO
-        self.platnosc_karto = platnosc_karto
-
-
+        
 
 
 class KasaSamoobslugowa:
@@ -175,6 +181,9 @@ class ZbiorKasySamoobslugowe:
     def odczekaj_tick_wszyscy(self):
         for i in range(self.ilosc_kas):
             self.lista_kas[i].odczekaj_tick()
+
+    def pusta_kolejka(self) -> bool:
+        return self.kolejka.empty()
 
 
     def aktualizacja_kas(self):
@@ -259,22 +268,52 @@ class ZbiorKasyObslugowe:
         for i in range(self.ilosc_kas):
             self.lista_kasa_x_kolejka[i][0].odczekaj_tick()
 
+    def pusta_kolejka(self) -> bool:
+        for i in range(self.ilosc_kas):
+            if not self.lista_kasa_x_kolejka[i][1].empty():
+                return False
+        return True
+
     def aktualizacja_kas(self):
-        """
-        Ta metoda:
-        1. Sprawdza czy kasa jest pusta, jak jest - dodaje klienta
-        """
+        
+        # Sprawdza czy kasa jest pusta, jak jest - dodaje klienta
+
         for i, kasa_kolejka in enumerate(self.lista_kasa_x_kolejka):
             if not kasa_kolejka[0].is_with_klient:
                 self.lista_kasa_x_kolejka[i][0].przyjmij_klienta(self.lista_kasa_x_kolejka[i][1].get())
 
-            
+def logika_kas(zb_kas_obj: ZbiorKasySamoobslugowe | ZbiorKasyObslugowe):
+    pass
 
 def test():
     """
     DO TESTOWANIA
     """
+    param_test = {'wiek': 18,
+                  'num_produkt': 40,
+                  't_na_prod': 3.5,
+                  'platnosc_karto': True}
+    
+    test_klienty: Klient = [ Klient(param=param_test) for _ in range(18) ]
+    
+    zb_kasy_obs = ZbiorKasySamoobslugowe(2)
 
+    for klient in test_klienty:
+        zb_kasy_obs.klienci_do_kolejki(klient)
+
+    i = 0 
+
+
+    # WYKMINIONA LOGIKA - TRZEBA ŁADNIE OPISAĆ !!
+    while not zb_kasy_obs.pusta_kolejka():
+        i += 1
+        zb_kasy_obs.aktualizacja_kas()
+        zb_kasy_obs.odczekaj_tick_wszyscy()
+        print("tick")
+    print(i)
+    print('end')
+    
+    
 
 if __name__ == "__main__":
     test()
