@@ -29,7 +29,7 @@ TODO:
 """
 import random
 from queue import Queue
-from numpy import normal
+from numpy.random import normal
 
 # STAŁE GLOBALNE
 STALA_PAKOWANIA = 0.025  # mniej więcej określenie, ile pakuje się jeden produkt
@@ -47,22 +47,22 @@ class Klient:
                  t_na_prod: float, platnosc_karto: bool):
         """
         Args:
-            wiek (int): Wiek podawany z rozkładu normalnego dla demografii miast
-            num_produkt (int): Generowany w zaleznosci od wieku i rodzaju dnia (duzy/maly ruch -> duze/male zakupy ale z dużym odch std)
+            wiek (int): Wiek losowany zgodnie z demografią miasta Wrocławia (2022)
+            num_produkt (int): Ilość kupowanych produktów zależnie od wieku klienta
             t_na_prod (float): Czas na produkt może być losowany, ale po przemnożeniu w klasie Kasa ( musi być zaokrąglony do INT), bowiem tick (odstęp czasowy) to 1 minuta
-            platnosc_karto (bool): Płatność kartą - zależne od wieku
+            platnosc_karto (bool): Płatność kartą - zależne od wieku (badania NBP 2023)
         """
 
-        # Funkcja losująca przedział wiekowy
+        # Funkcja losująca wiek klienta
         def random_age():
             # Dane populacji dla przedziałów wiekowych w 2022 roku (dane Urzędu statystycznego we Wrocławiu)
             age_ranges = {
-                "18-24": 30313 + (22382 * 5 / 2),  # 20-24 + 5/2 z 15-19
-                "25-34": 56144 + 65721,  # 25-29 + 30-34
-                "35-44": 67650 + 57518,  # 35-39 + 40-44
-                "45-54": 46934 + 33833,  # 45-49 + 50-54
-                "55-64": 29720 + 34885,  # 55-59 + 60-64
-                "65+": 42417 + 38473 + 21639 + 15164 + 17874  # 65-69, 70-74, 75-79, 80-84, 85+
+                (18, 24): 30313 + (22382 * 5 / 2),  # 20-24 + 5/2 z 15-19
+                (25, 34): 56144 + 65721,  # 25-29 + 30-34
+                (35, 44): 67650 + 57518,  # 35-39 + 40-44
+                (45, 54): 46934 + 33833,  # 45-49 + 50-54
+                (55, 64): 29720 + 34885,  # 55-59 + 60-64
+                (65, 100): 42417 + 38473 + 21639 + 15164 + 17874  # 65-69, 70-74, 75-79, 80-84, 85+
             }
 
             # Cała populacja Wrocławia
@@ -71,27 +71,48 @@ class Klient:
             # Wyliczanie prawdopodobieństw dla każdego przedziału wiekowego
             age_probabilities = {age: count / total_population for age, count in age_ranges.items()}
 
-            return random.choices(list(age_probabilities.keys()), weights=list(age_probabilities.values()))[0]
+            # Wylosowanie przedziału wiekowego klienta
+            przedzial = random.choices(list(age_probabilities.keys()), weights=list(age_probabilities.values()))[0]
 
+            # Wylosowanie konkretnego wieku z przedziału
+            return random.randint(przedzial[0], przedzial[1])
+
+        # Funkcja wyznaczająca przedział wiekowy klienta odpowiedni dla słownika ze statystykami
+        # (różne badania - różne przedziały wiekowe)
+        def znajdz_przedzial(slownik, wiek):
+
+            przedzial = None
+            for klucz_przedzialu in slownik:
+                if klucz_przedzialu[0] <= wiek <= klucz_przedzialu[1]:
+                    przedzial = klucz_przedzialu
+                    break
+            return przedzial
+
+        # Funckja losująca wielkość zakupów (małe, duże) w zależności od wieku klienta
         def random_groceries_size(wiek):
 
             prawdopodobne_wielkosci_zakupow = {
-                "18-24": {"duze": 0.13, "srednie": 0.27, "male": 0.37, "random": 0.08},
-                "25-34": {"duze": 0.13, "srednie": 0.38, "male": 0.31, "random": 0.1},
-                "35-44": {"duze": 0.12, "srednie": 0.41, "male": 0.32, "random": 0.08},
-                "45-54": {"duze": 0.12, "srednie": 0.34, "male": 0.38, "random": 0.07},
-                "55-64": {"duze": 0.07, "srednie": 0.28, "male": 0.47, "random": 0.06},
-                "65+": {"duze": 0.07, "srednie": 0.24, "male": 0.43, "random": 0.07}
+                (18, 24): {"duze": 0.13, "srednie": 0.27, "male": 0.37, "random": 0.08},
+                (25, 34): {"duze": 0.13, "srednie": 0.38, "male": 0.31, "random": 0.1},
+                (35, 44): {"duze": 0.12, "srednie": 0.41, "male": 0.32, "random": 0.08},
+                (45, 54): {"duze": 0.12, "srednie": 0.34, "male": 0.38, "random": 0.07},
+                (55, 64): {"duze": 0.07, "srednie": 0.28, "male": 0.47, "random": 0.06},
+                (65, 100): {"duze": 0.07, "srednie": 0.24, "male": 0.43, "random": 0.07}
             }
 
-            wielkosci = list(prawdopodobne_wielkosci_zakupow[wiek].keys())  # np. ["duze", "srednie", "male", "random"]
-            prawdopodobienstwa = list(prawdopodobne_wielkosci_zakupow[wiek].values())  # np. [0.13, 0.27, 0.37, 0.08]
+            # Znalezienie odpowiedniego przedziału wiekowego
+            przedzial = znajdz_przedzial(prawdopodobne_wielkosci_zakupow, wiek)
+
+            wielkosci = list(prawdopodobne_wielkosci_zakupow[przedzial].keys())  # np. ["duze", "srednie", "male", "random"]
+            prawdopodobienstwa = list(prawdopodobne_wielkosci_zakupow[przedzial].values())  # np. [0.13, 0.27, 0.37, 0.08]
 
             # Losowanie wielkości zakupów
-            return random.choices(wielkosci, prawdopodobienstwa)
+            return random.choices(wielkosci, prawdopodobienstwa)[0]
 
+        # Funkcja losująca konkretną liczbę produktów kupowanych przez klienta
         def random_groceries_amount(size):
 
+            # Przyjęte przez nas ilości produktów dla małych, średnich i dużych zakupów
             zakresy_ilosci_produktow = {
                 "male": {"min": 1, "max": 10},
                 "srednie": {"min": 11, "max": 25},
@@ -102,6 +123,7 @@ class Klient:
             minimum = zakresy_ilosci_produktow[size]["min"]
             maximum = zakresy_ilosci_produktow[size]["max"]
 
+            # Wylosowanie ilości produktów
             return round(random.uniform(minimum, maximum))
 
         def czas_skan_bez_ujemnych():
@@ -114,12 +136,30 @@ class Klient:
 
             return czas_skan
 
+        # Funkcja losująca, czy klient korzysta z płatności bezgotówkowych
+        def czy_karta(wiek):
+
+            prawdopodobienstwo_platnosci_bezgotowkowej = {
+                (18, 24): 0.585 + 0.085,
+                (25, 39): 0.771 + 0.03,
+                (40, 54): 0.669 + 0.013,
+                (55, 64): 0.408 + 0.0,
+                (65, 100): 0.328 + 0.004
+            }
+
+            przedzial = znajdz_przedzial(prawdopodobienstwo_platnosci_bezgotowkowej, wiek)
+
+            prawd_karta = prawdopodobienstwo_platnosci_bezgotowkowej[przedzial]
+            prawdopodobienstwa = [prawd_karta, 1 - prawd_karta]
+
+            return random.choices([True, False], prawdopodobienstwa)[0]
+
+
         self.wiek = random_age()
         self.wielk_zakupow = random_groceries_size(self.wiek)
         self.num_produkt = random_groceries_amount(self.wielk_zakupow)
         self.t_na_prod = czas_skan_bez_ujemnych()
-        # DO DODANIA FUNKCJA PŁATNOŚĆ KARTO
-        self.platnosc_karto = platnosc_karto
+        self.platnosc_karto = czy_karta(self.wiek)
 
 
 
