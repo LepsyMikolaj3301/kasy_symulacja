@@ -32,10 +32,10 @@ from queue import Queue
 from numpy.random import normal
 
 # STAŁE GLOBALNE
-STALA_PAKOWANIA = 0.025  # mniej więcej określenie, ile pakuje się jeden produkt
-STALA_PLT_KARTO = 0  # DO DODANIA, PROSZE UZUPEŁNIĆ
-STALA_PLT_GOTOWKO = 0  # TO TEŻ
-STALA_KASOWANIA_EKSPERT = 0  # TO KURWA TEŻ XD
+STALA_PAKOWANIA = 0.1  # mniej więcej określenie, ile pakuje się jeden produkt
+STALA_PLT_KARTO = 2  # DO DODANIA, PROSZE UZUPEŁNIĆ
+STALA_PLT_GOTOWKO = 4  # TO TEŻ
+STALA_KASOWANIA_EKSPERT = 2  # TO KURWA TEŻ XD
 
 
 class Klient:
@@ -156,6 +156,7 @@ class KasaSamoobslugowa:
         # GIGA WAŻNE - OBLICZENIE WSTĘPNE OBSŁUŻENIA KASY:
         self.czas_obslugi = round(self.t_na_produkt * self.initial_ilosc_prod + self.kasa_checkout)
 
+        # Zapisanie do kasy informacji ile obsługiwano jednego klienta
         self.lista_czasow_obslugi.append(self.czas_obslugi)
 
         # nadanie counterowi nowego czasu, nowego klienta
@@ -165,8 +166,9 @@ class KasaSamoobslugowa:
         # Ta funkcja nam zwróci wartość True, jeżeli klient został obsłużony
         if self.realny_czas_counter <= 0:
             self.is_with_klient = False
-        # Inaczej, odczekaj jeden tick
-        self.realny_czas_counter -= 1
+        else:
+            # Inaczej, odczekaj jeden tick
+            self.realny_czas_counter -= 1
 
 
 class ZbiorKasySamoobslugowe:
@@ -182,16 +184,23 @@ class ZbiorKasySamoobslugowe:
         for i in range(self.ilosc_kas):
             self.lista_kas[i].odczekaj_tick()
 
-    def pusta_kolejka(self) -> bool:
+    def war_koniec(self) -> bool:
+        # Pętla sprawdzająca czy wszystkie kasy są puste
+        for kasa in self.lista_kas:
+            if kasa.is_with_klient:
+                return False
+        # jeżeli nie zreturnuje, to znaczy, że kasy puste
+        # jeżeli kolejka pusta -> return True
         return self.kolejka.empty()
 
 
     def aktualizacja_kas(self):
-        """
-        Ta metoda:
-        1. Sprawdza czy kasa jest pusta, jak jest - dodaje klienta
-        """
+        
         for i, kasa in enumerate(self.lista_kas):
+            # sprawdzamy czy ktoś jeszcze jest w kolejce
+            if self.kolejka.empty():
+                break
+            # jeżeli jest, to mozemy dodać do kasy
             if not kasa.is_with_klient:
                 self.lista_kas[i].przyjmij_klienta(self.kolejka.get())
         
@@ -216,7 +225,6 @@ class KasaObslugowa:
 
         # Resetujemy wartość, czyli nowy klient jest obsługiwany
         self.is_with_klient = True
-        
         self.initial_ilosc_prod = klient.num_produkt
         self.rodzaj_platnosci = STALA_PLT_KARTO if klient.platnosc_karto else STALA_PLT_GOTOWKO
 
@@ -229,6 +237,7 @@ class KasaObslugowa:
         # GIGA WAŻNE - OBLICZENIE WSTĘPNE OBSŁUŻENIA KASY:
         self.czas_obslugi = round(self.t_na_produkt * self.initial_ilosc_prod + self.kasa_checkout)
 
+        # dodajemy do historii czas obsługi klienta
         self.lista_czasow_obslugi.append(self.czas_obslugi)
 
         # nadanie counterowi nowego czasu, nowego klienta
@@ -236,11 +245,11 @@ class KasaObslugowa:
 
 
     def odczekaj_tick(self):
-
+        # odczekanie ticku pojedyńczej kasy
         if self.realny_czas_counter <= 0:
             self.is_with_klient = False
-
-        self.realny_czas_counter -= 1
+        else:
+            self.realny_czas_counter -= 1
 
 
 class ZbiorKasyObslugowe:
@@ -265,38 +274,47 @@ class ZbiorKasyObslugowe:
         self.lista_kasa_x_kolejka[index_min][1].put(klient)
 
     def odczekaj_tick_wszyscy(self):
+        # Odczekujemy po wszystkich kasach TICK
         for i in range(self.ilosc_kas):
             self.lista_kasa_x_kolejka[i][0].odczekaj_tick()
 
-    def pusta_kolejka(self) -> bool:
+    def war_koniec(self) -> bool:
+        # Sprawdzamy czy kolejki są puste, jeżeli one są puste 
         for i in range(self.ilosc_kas):
             if not self.lista_kasa_x_kolejka[i][1].empty():
                 return False
         return True
 
     def aktualizacja_kas(self):
-        
         # Sprawdza czy kasa jest pusta, jak jest - dodaje klienta
-
         for i, kasa_kolejka in enumerate(self.lista_kasa_x_kolejka):
+            # sprawdza wcześniej czy kolejka nie jest pusta ( był bug z tym związany )
+            if kasa_kolejka[1].empty():
+                break
+            # teraz sprawdzamy czy kasa jest pusta
             if not kasa_kolejka[0].is_with_klient:
                 self.lista_kasa_x_kolejka[i][0].przyjmij_klienta(self.lista_kasa_x_kolejka[i][1].get())
 
-def logika_kas(zb_kas_obj: ZbiorKasySamoobslugowe | ZbiorKasyObslugowe):
-    pass
 
 def test():
     """
     DO TESTOWANIA
     """
+    def param_test_gen():
+        param = {'wiek': random.randint(7, 90),
+                 'num_produkt': random.randint(1, 40),
+                 't_na_prod': min(12, max(2, random.gauss(3.5))),
+                 'platnosc_karto': True}
+        return param
+    
     param_test = {'wiek': 18,
-                  'num_produkt': 40,
-                  't_na_prod': 3.5,
+                  'num_produkt': 2,
+                  't_na_prod': 1,
                   'platnosc_karto': True}
     
-    test_klienty: Klient = [ Klient(param=param_test) for _ in range(18) ]
+    test_klienty: Klient = [ Klient(param=param_test) for _ in range(3) ]
     
-    zb_kasy_obs = ZbiorKasySamoobslugowe(2)
+    zb_kasy_obs = ZbiorKasyObslugowe(2)
 
     for klient in test_klienty:
         zb_kasy_obs.klienci_do_kolejki(klient)
@@ -305,7 +323,7 @@ def test():
 
 
     # WYKMINIONA LOGIKA - TRZEBA ŁADNIE OPISAĆ !!
-    while not zb_kasy_obs.pusta_kolejka():
+    while not zb_kasy_obs.war_koniec():
         i += 1
         zb_kasy_obs.aktualizacja_kas()
         zb_kasy_obs.odczekaj_tick_wszyscy()
