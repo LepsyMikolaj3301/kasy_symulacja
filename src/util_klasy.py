@@ -36,10 +36,10 @@ from queue import Queue
 from numpy.random import normal
 
 # STAŁE GLOBALNE
-STALA_PAKOWANIA = 0.1  # mniej więcej określenie, ile pakuje się jeden produkt
-STALA_PLT_KARTO = 2  # DO DODANIA, PROSZE UZUPEŁNIĆ
-STALA_PLT_GOTOWKO = 4  # TO TEŻ
-STALA_KASOWANIA_EKSPERT = 2  # TO KURWA TEŻ XD
+STALA_PAKOWANIA = 0.5  # mniej więcej określenie, ile pakuje się jeden produkt
+STALA_PLT_KARTO = 7  # czas zapłacenia kartą
+STALA_PLT_GOTOWKO = 14  # czas zapłacenia gotówką
+STALA_KASOWANIA_EKSPERT = 2  # czas skasowania jednego produktu przez kasjera
 
 
 class Klient:
@@ -132,7 +132,7 @@ class Klient:
         
         # DO DODANIA FUNKCJA PŁATNOŚĆ KARTO
         
-
+# CZĘŚĆ DLA KAS SAMOOBSŁUGOWYCH
 
 class KasaSamoobslugowa:
     def __init__(self):
@@ -211,8 +211,9 @@ class ZbiorKasySamoobslugowe:
 
 
 # !!
-# Nie tworzymy osobnych instancji - zrobienie nowych metod przyjmij_klienta() które obsługują klienta i iterują informacje
-
+# CZĘŚĆ KAS OBSŁUGOWYCH
+# 
+# 
 class KasaObslugowa:
     def __init__(self):
 
@@ -299,30 +300,7 @@ class ZbiorKasyObslugowe:
             if not kasa_kolejka[0].is_with_klient:
                 self.lista_kasa_x_kolejka[i][0].przyjmij_klienta(self.lista_kasa_x_kolejka[i][1].get())
 
-def wybor_przydziel_rodz_kas(zb_k_obslugowe: ZbiorKasyObslugowe, zb_k_samoobslugowe: ZbiorKasySamoobslugowe) -> str:
-    """Ta funkcja będzie stwierdzać, do którego zbioru kas powinien byc Klient przydzielony
-        Zakładamy, że klient ZAWSZE wybiera KRÓTSZĄ KOLEJKĘ, ponieważ jest mu obojętne, gdzie pójdzie
-        Można też dodać założenia z wiekiem, wielkością zakupów itd ALE TO SIE ZOBAAACZY
-        
-    Args:
-        zb_k_obslugowe (ZbiorKasyObslugowe): obiekt klasy Zbiorowej dla kas obsługowych 
-        zb_k_samoobslugowe (ZbiorKasySamoobslugowe): obiekt klasy Zbiorowej dla kas samoobsługowych
-        klient (Klient): obiekt klasy Klient który będzie przydzielany
-    Returns:
-        String zawierający informację o tym, jaki zbior wybrać
-    """
-    # znajdujemy dlugosc kolejki dla kas Samoobslugowych
-    dlg_kol_k_samobs = zb_k_samoobslugowe.kolejka.qsize()
-    
-    # znajdujemy dlugosci kolejek dla kas obslugowych - lista
-    dlg_kol_k_obs = [kas_kol[1].qsize() for kas_kol in zb_k_obslugowe.lista_kasa_x_kolejka]
-    
-    # porównujemy kolejki ze zbiorów i stwierdzamy do jakiego zbioru przypisujemy 
-    # Jeżeli jakakolwiek kolejka będzie krótsza od tych z samoobsługowej, to przypisz do zbioru obsługowej
-    for dlg_kol in dlg_kol_k_obs:
-        if dlg_kol < dlg_kol_k_samobs:
-            return "zbior_obs"
-    return "zbior_samoobs"
+
             
     
 

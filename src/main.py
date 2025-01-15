@@ -107,9 +107,48 @@ class Symulacja:
         """
         def stworz_zb_kas(liczba_kas_samoobs: int, liczba_kas_obs: int):
             # do poprawy
-            return [ ]
+            zb_kas = {}
+            if liczba_kas_samoobs:
+                zb_kas['k_samoobs'] = uk.ZbiorKasySamoobslugowe(liczba_kas_samoobs)
+            if liczba_kas_obs:
+                zb_kas['k_obs'] = uk.ZbiorKasyObslugowe(liczba_kas_obs)
+            return zb_kas
+
+        def wybor_rodz_kas(zb_kas: dict[uk.ZbiorKasyObslugowe | uk.ZbiorKasySamoobslugowe]) -> str:
+            """Ta funkcja będzie stwierdzać, do którego zbioru kas powinien byc Klient przydzielony
+                Zakładamy, że klient ZAWSZE wybiera KRÓTSZĄ KOLEJKĘ, ponieważ jest mu obojętne, gdzie pójdzie
+                Można też dodać założenia z wiekiem, wielkością zakupów itd ALE TO SIE ZOBAAACZY
+                
+            Args:
+                zb_k_obslugowe (ZbiorKasyObslugowe): obiekt klasy Zbiorowej dla kas obsługowych 
+                zb_k_samoobslugowe (ZbiorKasySamoobslugowe): obiekt klasy Zbiorowej dla kas samoobsługowych
+                klient (Klient): obiekt klasy Klient który będzie przydzielany
+            Returns:
+                klucz (str): klucz odpowiedniej klasy
+            """
+            # jezeli tylko jeden rodzaj kasy jest dostępny -> od razu przydziel klienta
+            if len(zb_kas.keys()) == 1:
+                key_one: str = list(zb_kas.keys())[0]
+                return key_one
             
-        # zb_kas: list[uk.ZbiorKasyObslugowe | uk.ZbiorKasySamoobslugowe] = 
+            # znajdujemy dlugosc kolejki dla kas Samoobslugowych
+            dlg_kol_k_samobs = zb_kas['k_samoobs'].kolejka.qsize()
+            
+            # znajdujemy dlugosci kolejek dla kas obslugowych - lista
+            dlg_kol_k_obs = [kas_kol[1].qsize() for kas_kol in zb_kas['k_obs'].lista_kasa_x_kolejka]
+            
+            # porównujemy kolejki ze zbiorów i stwierdzamy do jakiego zbioru przypisujemy 
+            # Jeżeli jakakolwiek kolejka będzie krótsza od tych z samoobsługowej, to przypisz do zbioru obsługowej
+            for dlg_kol in dlg_kol_k_obs:
+                if dlg_kol < dlg_kol_k_samobs:
+                    return 'k_obs'
+            return 'k_samoobs'
+        
+        #tworzymy ogólny zbior kas, zawierający  
+        zb_kas: dict[uk.ZbiorKasyObslugowe | uk.ZbiorKasySamoobslugowe] = stworz_zb_kas(liczba_kas_samoobs=self.params['liczba_kas_samoobslugowych'],
+                                                                                        liczba_kas_obs=self.params['liczba_kas_zwyklych'])
+        
+        
         
 
         
