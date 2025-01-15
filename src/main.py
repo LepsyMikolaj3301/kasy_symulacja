@@ -61,14 +61,16 @@ def odczyt_pliku_ster() -> dict:
 
 def losuj_czas_nowy_klient(ranga_dnia: int):
     """ TA FUNKCJA LOSUJE CZAS MIĘDZY 'PRZYCHODZENIEM' NOWYCH KLIENTÓW DO SKLEPU
-
+        Będzie ona opisywana przez generator ( nie wiem jeszcze jaki model będzie odwzorowywał )
+        
     Args:
         rodzaj_dnia (int): RANGA dnia ( czy duży / średni / mały RUCH w sklepie)
     """
     match ranga_dnia:
         # dzień customowy
         case 0: 
-            pass
+            lamlam  = float(input("Podaj wartosc lambda do rozkladu: "))
+            
         # dzień roboczy - mały ruch ( środa w lidlu )
         case 1:
             pass
@@ -85,8 +87,9 @@ class Symulacja:
 
     def __init__(self):
         self.params = odczyt_pliku_ster()
+        # czas trwania otwarcia kas ( 6:30 - 22.00)
+        self.simulation_duration = 55_800
 
-      
 
     def symulacja(self):
         """
@@ -102,6 +105,11 @@ class Symulacja:
             3. Zapisanie wyników i wyświetlenie wyników końcowych
 
         """
+        def stworz_zb_kas(liczba_kas_samoobs: int, liczba_kas_obs: int):
+            # do poprawy
+            return [ ]
+            
+        # zb_kas: list[uk.ZbiorKasyObslugowe | uk.ZbiorKasySamoobslugowe] = 
         
 
         
@@ -115,7 +123,10 @@ def zapis_sym_json(sym_object: Symulacja):
           json.dump(vars(sym_object), sym_file, indent=6)
     
 
-
+def test_gestosci_losowania_klientow():
+    # Tu trzeba sprawdzić, jakie parametry rozkładu dadzą chciany wynik
+    
+    pass
 
 
 
