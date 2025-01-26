@@ -49,11 +49,22 @@ TODO:
 
 import json
 import util_klasy as uk
+import os
+
+
+# STALE POMOCNICZE (ZAPIS PLIKU)
+FILE_NAME = os.path.basename(__file__)
+CUR_DIR = os.path.dirname(__file__)
+
 
 
 def odczyt_pliku_ster() -> dict:
+    """ZAWIERA ZMIENNE SYMULACJI
 
-    with open(r'rsc\\plik_ster.json', 'r') as file:
+    Returns:
+        dict: Dictionary zawierający zmienne decyzyjne
+    """
+    with open(CUR_DIR + r'\rsc\plik_ster.json', 'r') as file:
         parametry = json.load(file)
         return parametry
     
@@ -80,15 +91,16 @@ def losuj_czas_nowy_klient(ranga_dnia: int):
         # dzień ruchliwy - duży ruch ( BLACK FRIDAY w lidlu )
         case 3:
             pass
-        
+ 
 
       
 class Symulacja:
 
     def __init__(self):
-        self.params = odczyt_pliku_ster()
-        # czas trwania otwarcia kas ( 6:30 - 22.00)
-        self.simulation_duration = 55_800
+        # parametry ( zmienne symulacji )
+        self.params = odczyt_pliku_ster()      
+        
+        
 
 
     def symulacja(self):
@@ -105,16 +117,24 @@ class Symulacja:
             3. Zapisanie wyników i wyświetlenie wyników końcowych
 
         """
-        def stworz_zb_kas(liczba_kas_samoobs: int, liczba_kas_obs: int):
-            # do poprawy
+        def stworz_zb_kas(liczba_kas_samoobs: int, liczba_kas_obs: int) -> dict[uk.ZbiorKasyObslugowe | uk.ZbiorKasySamoobslugowe]:
+            """Tworzymy obiekt ZB_KAS ktory wrappuje kasy samoobslugowe i obslugowe
+
+            Args:
+                liczba_kas_samoobs (int): parametr do tworzenia obiektu ZbiorKasySamoobslugowe
+                liczba_kas_obs (int): parametr do tworzenia obiektu ZbiorKasyObs
+
+            Returns:
+                zb_kas (dict): Dict zaw. zbiory 2 roznych kas
+            """
             zb_kas = {}
             if liczba_kas_samoobs:
-                zb_kas['k_samoobs'] = uk.ZbiorKasySamoobslugowe(liczba_kas_samoobs)
+                zb_kas['k_s'] = uk.ZbiorKasySamoobslugowe(liczba_kas_samoobs)
             if liczba_kas_obs:
-                zb_kas['k_obs'] = uk.ZbiorKasyObslugowe(liczba_kas_obs)
+                zb_kas['k_o'] = uk.ZbiorKasyObslugowe(liczba_kas_obs)
             return zb_kas
 
-        def wybor_rodz_kas(zb_kas: dict[uk.ZbiorKasyObslugowe | uk.ZbiorKasySamoobslugowe]) -> str:
+        def wybor_rodz_kas(zb_kas: dict[uk.ZbiorKasyObslugowe | uk.ZbiorKasySamoobslugowe], klient: uk.Klient) -> str:
             """Ta funkcja będzie stwierdzać, do którego zbioru kas powinien byc Klient przydzielony
                 Zakładamy, że klient ZAWSZE wybiera KRÓTSZĄ KOLEJKĘ, ponieważ jest mu obojętne, gdzie pójdzie
                 Można też dodać założenia z wiekiem, wielkością zakupów itd ALE TO SIE ZOBAAACZY
@@ -126,28 +146,48 @@ class Symulacja:
             Returns:
                 klucz (str): klucz odpowiedniej klasy
             """
+            # przypadek gdy nie ma kas określonych
+            if len(zb_kas.keys()) == 0:
+                raise Exception("BRAK LICZBY KAS -> NIE MA SKLEPU")
+            
+            
             # jezeli tylko jeden rodzaj kasy jest dostępny -> od razu przydziel klienta
             if len(zb_kas.keys()) == 1:
                 key_one: str = list(zb_kas.keys())[0]
                 return key_one
             
             # znajdujemy dlugosc kolejki dla kas Samoobslugowych
-            dlg_kol_k_samobs = zb_kas['k_samoobs'].kolejka.qsize()
+            dlg_kol_k_samobs = zb_kas['k_s'].kolejka.qsize()
             
-            # znajdujemy dlugosci kolejek dla kas obslugowych - lista
-            dlg_kol_k_obs = [kas_kol[1].qsize() for kas_kol in zb_kas['k_obs'].lista_kasa_x_kolejka]
+            # znajdujemy dlugosci kolejek dla kas obslugowych - lista dlugosci kolejek
+            dlg_kol_k_obs = [kas_kol[1].qsize() for kas_kol in zb_kas['k_o'].lista_kasa_x_kolejka]
             
             # porównujemy kolejki ze zbiorów i stwierdzamy do jakiego zbioru przypisujemy 
+            
+            
+            # WAŻNE - JEŻELI KLIENT NIE MOŻE PLACIC KARTO -> PRZYDZIEL DO KAS OBSLUGOWYCH
+            if not klient.platnosc_karto:
+                zb_kas['k_o'].klienci_do_kolejki(klient)
+                return
+            
+            
             # Jeżeli jakakolwiek kolejka będzie krótsza od tych z samoobsługowej, to przypisz do zbioru obsługowej
             for dlg_kol in dlg_kol_k_obs:
                 if dlg_kol < dlg_kol_k_samobs:
-                    return 'k_obs'
-            return 'k_samoobs'
+                    # jezeli jakakolwiek kolejka do obslogowych jest krotsza od bezobsl. to przydziela do tego zbioru
+                    zb_kas['k_o'].klienci_do_kolejki(klient)
+                    break
+            else:
+                # jezeli nie znajdzie sie taka klasa, to przydzielamy do kas samoobs.
+                zb_kas['k_s'].klienci_do_kolejki(klient)
+            return
+                
         
         #tworzymy ogólny zbior kas, zawierający  
-        zb_kas: dict[uk.ZbiorKasyObslugowe | uk.ZbiorKasySamoobslugowe] = stworz_zb_kas(liczba_kas_samoobs=self.params['liczba_kas_samoobslugowych'],
-                                                                                        liczba_kas_obs=self.params['liczba_kas_zwyklych'])
+        zb_kas: dict[uk.ZbiorKasyObslugowe | uk.ZbiorKasySamoobslugowe] = stworz_zb_kas(liczba_kas_samoobs=self.params['liczba_kas_samo_obs'],
+                                                                                        liczba_kas_obs=self.params['liczba_kas_obs'])
         
+        # 
         
         
 
@@ -158,7 +198,7 @@ class Symulacja:
 
 # Informacje o symulacji będą zapisywane w pliku JSON
 def zapis_sym_json(sym_object: Symulacja):
-    with open(r'rsc\\zapis_symulacji.json', 'a') as sym_file:
+    with open(CUR_DIR + r'rsc\\zapis_symulacji.json', 'a') as sym_file:
           json.dump(vars(sym_object), sym_file, indent=6)
     
 
@@ -171,6 +211,7 @@ def test_gestosci_losowania_klientow():
 
 
 def test():
+    
     param = odczyt_pliku_ster()
     print(param)
 

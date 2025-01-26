@@ -1,5 +1,5 @@
 {
-    "liczba_kas_samoobslugowych": 5,
-    "liczba_kas_zwyklych": 10,
-    "ranga_ruchu_dnia": 1
+    "liczba_kas_samo_obs": 5,
+    "liczba_kas_obs": 10,
+    "czas_sym": 55800
 }

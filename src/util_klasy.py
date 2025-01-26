@@ -33,8 +33,7 @@ TODO:
 """
 import random
 from queue import Queue
-from numpy.random import normal
-from numpy.random import normal
+from numpy.random import normal, exponential
 
 # STAŁE GLOBALNE
 STALA_PAKOWANIA = 0.5  # mniej więcej określenie, ile pakuje się jeden produkt
@@ -340,14 +339,28 @@ class ZbiorKasyObslugowe:
             if not kasa_kolejka[0].is_with_klient:
                 self.lista_kasa_x_kolejka[i][0].przyjmij_klienta(self.lista_kasa_x_kolejka[i][1].get())
 
+def czas_nast_klient(lamb: float) -> int:
+    # wylosuj ilosc sekund do przyjscia nastepnego klienta
+    return round(exponential(1/lamb))
 
-            
+def test_exp():
+    # dla takiej wartości w miare działa, ale wciąż są potrzebne dokładniejsze badania
+    # ok. 350 klientów na 3600 sekund
+    LAM = 0.1
+    # zmienne
+    klient_counter = 0
+    next_klient_count = 0
     
-
+    for i in range(3600):
+        if next_klient_count <= 0:
+            next_klient_count = czas_nast_klient(LAM)
+            klient_counter += 1
+        next_klient_count -= 1
+    print(f"Klient counter: {klient_counter}")
 
 def test():
     """
-    DO TESTOWANIA
+    DO TESTOWANIA GŁÓWNEJ LOGIKI
     """
     def param_test_gen():
         param = {'wiek': random.randint(7, 90),
@@ -383,4 +396,5 @@ def test():
     
 
 if __name__ == "__main__":
-    test()
+    # test()
+    test_exp()
