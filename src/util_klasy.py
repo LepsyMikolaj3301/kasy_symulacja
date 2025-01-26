@@ -158,12 +158,18 @@ class Klient:
 
             return random.choices([True, False], prawdopodobienstwa)[0]
 
-
-        self.wiek = random_age()
-        self.wielk_zakupow = random_groceries_size(self.wiek)
-        self.num_produkt = random_groceries_amount(self.wielk_zakupow)
-        self.t_na_prod = czas_skan_bez_ujemnych()
-        self.platnosc_karto = czy_karta(self.wiek)
+        if param:
+            self.wiek = param['wiek']
+            self.wiek = '0'
+            self.num_produkt = param['num_produkt']
+            self.t_na_prod = param['t_na_prod']
+            self.platnosc_karto = param['platnosc_karto']
+        else:
+            self.wiek = random_age()
+            self.wielk_zakupow = random_groceries_size(self.wiek)
+            self.num_produkt = random_groceries_amount(self.wielk_zakupow)
+            self.t_na_prod = czas_skan_bez_ujemnych()
+            self.platnosc_karto = czy_karta(self.wiek)
 
 
 
@@ -320,7 +326,7 @@ class ZbiorKasyObslugowe:
     def war_koniec(self) -> bool:
         # Sprawdzamy czy kolejki są puste, jeżeli one są puste 
         for i in range(self.ilosc_kas):
-            if not self.lista_kasa_x_kolejka[i][1].empty():
+            if not self.lista_kasa_x_kolejka[i][1].empty() or self.lista_kasa_x_kolejka[i][0].is_with_klient:
                 return False
         return True
 
@@ -329,7 +335,7 @@ class ZbiorKasyObslugowe:
         for i, kasa_kolejka in enumerate(self.lista_kasa_x_kolejka):
             # sprawdza wcześniej czy kolejka nie jest pusta ( był bug z tym związany )
             if kasa_kolejka[1].empty():
-                break
+                continue
             # teraz sprawdzamy czy kasa jest pusta
             if not kasa_kolejka[0].is_with_klient:
                 self.lista_kasa_x_kolejka[i][0].przyjmij_klienta(self.lista_kasa_x_kolejka[i][1].get())
@@ -355,9 +361,9 @@ def test():
                   't_na_prod': 1,
                   'platnosc_karto': True}
     
-    test_klienty: Klient = [ Klient(param=param_test) for _ in range(3) ]
+    test_klienty: Klient = [ Klient(param=param_test_gen()) for _ in range(180) ]
     
-    zb_kasy_obs = ZbiorKasyObslugowe(2)
+    zb_kasy_obs = ZbiorKasyObslugowe(20)
 
     for klient in test_klienty:
         zb_kasy_obs.klienci_do_kolejki(klient)
