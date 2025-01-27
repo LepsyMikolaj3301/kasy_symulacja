@@ -161,7 +161,7 @@ class Symulacja:
         
         # GŁÓWNA PĘTLA SYMULACJI
         while 1: # czy cały czas minął i czy kasy są puste (war_koncowe)
-            
+            pass
         
 
         

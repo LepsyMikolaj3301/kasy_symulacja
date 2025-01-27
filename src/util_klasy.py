@@ -224,17 +224,25 @@ class ZbiorKasySamoobslugowe:
         self.kolejka = Queue()
         self.lista_kas = [KasaSamoobslugowa() for _ in range(ilosc_kas)] 
         self.ilosc_kas = ilosc_kas
-        
+        self.interwal = INTERWAL
+        self.dlg_kolejek_interwal = []
         # INFORMACJE ZEBRANE O KLIENTACH
         self.ilosc_obsluzonych_klient = 0
 
     def klienci_do_kolejki(self, klient: Klient):
         self.kolejka.put(klient)
 
-    def odczekaj_tick_wszyscy(self):
+    def odczekaj_tick_wszyscy(self, true_czas):
+        # odczytanie długości kolejki
+        def zapisz_dlg_kolejki():
+            self.dlg_kolejek_interwal.append(self.kolejka._qsize)
+        
         for i in range(self.ilosc_kas):
             self.lista_kas[i].odczekaj_tick()
-
+        if true_czas % self.interwal == 0:
+            zapisz_dlg_kolejki()
+        
+        
     def war_koniec(self) -> bool:
         # Pętla sprawdzająca czy wszystkie kasy są puste
         for kasa in self.lista_kas:
@@ -345,17 +353,23 @@ class ZbiorKasyObslugowe:
         self.lista_kasa_x_kolejka[index_min][1].put(klient)
 
     def odczekaj_tick_wszyscy(self, true_czas: int):
-        def zapisz_dlg_kolejek(true_czas):
-            if true_czas % self.interwal == 0:
-                
-                # DO ZMIANY - DODANIE DLG KOLEJEK W CZASIE ( W INTERWAŁACH )
-                
-                for i, dlg_kolejki in range(self.ilosc_kas):
-                    self.dlg_kolejek_interwal[]
-                
+        
+        
+        def zapisz_dlg_kolejek():
+            # zapisujemy w danym interwale wszystkie długości kolejek, do każdej kasy
+            for i, kasa_kolej in range(self.lista_kasa_x_kolejka):
+                kolej: Queue = kasa_kolej[0]
+                self.dlg_kolejek_interwal[i][1].append(kolej._qsize)
+            
         # Odczekujemy po wszystkich kasach TICK
         for i in range(self.ilosc_kas):
             self.lista_kasa_x_kolejka[i][0].odczekaj_tick()
+            
+            
+        # sprawdzenie, czy co interwał mamy zapisywać stan kolejki
+        if true_czas % self.interwal == 0:
+            zapisz_dlg_kolejek()
+        
 
     def war_koniec(self) -> bool:
         # Sprawdzamy czy kolejki są puste, jeżeli one są puste 
