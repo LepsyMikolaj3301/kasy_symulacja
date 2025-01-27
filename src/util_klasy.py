@@ -36,10 +36,12 @@ from queue import Queue
 from numpy.random import normal, exponential
 
 # STAŁE GLOBALNE
-STALA_PAKOWANIA = 0.5  # mniej więcej określenie, ile pakuje się jeden produkt
-STALA_PLT_KARTO = 7  # czas zapłacenia kartą
-STALA_PLT_GOTOWKO = 14  # czas zapłacenia gotówką
+STALA_PAKOWANIA = 2.5 # mniej więcej określenie, ile pakuje się jeden produkt
+STALA_PLT_KARTO_NORMAL = 12.5  # czas zapłacenia kartą
+STALA_WPR_PIN = 14.5 # czas wprowadzania pinu
+STALA_PLT_GOTOWKO = 34  # czas zapłacenia gotówką
 STALA_KASOWANIA_EKSPERT = 2  # czas skasowania jednego produktu przez kasjera
+INTERWAL = 10 
 
 
 class Klient:
@@ -133,8 +135,9 @@ class Klient:
             number_generated = False
 
             while not number_generated:
+                # 
                 czas_skan = normal(4.5, 1)
-                if czas_skan >= 2:  # Akceptujemy tylko wartości > 2, bo klienci szybciej nie skanują
+                if czas_skan >= STALA_KASOWANIA_EKSPERT:  # Akceptujemy tylko wartości > 2, bo klienci szybciej nie skanują
                     number_generated = True
 
             return czas_skan
@@ -190,9 +193,11 @@ class KasaSamoobslugowa:
 
         self.initial_ilosc_prod = klient.num_produkt
         self.t_na_produkt = klient.t_na_prod
-
+        
         def checkout_time() -> float:
-            return STALA_PAKOWANIA * self.initial_ilosc_prod + STALA_PLT_KARTO
+            # WYDŁUŻONA PŁATNOŚĆ ZE WZGLĘDU NA WPROWADZENIE PINU -> WIĘCEJ NIŻ 20 PRODUKTÓW MOŻE WSKAZYWAĆ NA WPR PINU
+            platnosc_karto = STALA_PLT_KARTO_NORMAL + STALA_WPR_PIN if klient.num_produkt > 20 else STALA_PLT_KARTO_NORMAL
+            return STALA_PAKOWANIA * self.initial_ilosc_prod + platnosc_karto
 
         # czas po zakończeniu kasowania
         self.kasa_checkout = checkout_time()
@@ -219,6 +224,9 @@ class ZbiorKasySamoobslugowe:
         self.kolejka = Queue()
         self.lista_kas = [KasaSamoobslugowa() for _ in range(ilosc_kas)] 
         self.ilosc_kas = ilosc_kas
+        
+        # INFORMACJE ZEBRANE O KLIENTACH
+        self.ilosc_obsluzonych_klient = 0
 
     def klienci_do_kolejki(self, klient: Klient):
         self.kolejka.put(klient)
@@ -246,6 +254,14 @@ class ZbiorKasySamoobslugowe:
             # jeżeli jest, to mozemy dodać do kasy
             if not kasa.is_with_klient:
                 self.lista_kas[i].przyjmij_klienta(self.kolejka.get())
+                # zapisanie info o przyjeciu klienta
+                self.ilosc_obsluzonych_klient += 1
+    
+    def infolist_czas_obslugi(self) -> list[tuple]:
+        list_obsluga_kl = []
+        for i, kasa in enumerate(self.lista_kas):
+            list_obsluga_kl.append( (i, kasa.lista_czasow_obslugi) )
+        return list_obsluga_kl
         
 
 
@@ -258,7 +274,9 @@ class KasaObslugowa:
 
         self.t_na_produkt = STALA_KASOWANIA_EKSPERT
         
+        # ZBIERANE INFORMACJE O KLIENTACH
         self.lista_czasow_obslugi = []
+        
         # GIGA WAŻNE - LICZNIK, ILE TICKÓW ZOSTAŁO DO PRZECZEKANIA
         self.realny_czas_counter = 0
 
@@ -270,13 +288,17 @@ class KasaObslugowa:
         # Resetujemy wartość, czyli nowy klient jest obsługiwany
         self.is_with_klient = True
         self.initial_ilosc_prod = klient.num_produkt
-        self.rodzaj_platnosci = STALA_PLT_KARTO if klient.platnosc_karto else STALA_PLT_GOTOWKO
+        
+        # WYDŁUŻONA PŁATNOŚĆ ZE WZGLĘDU NA WPROWADZENIE PINU -> WIĘCEJ NIŻ 20 PRODUKTÓW MOŻE WSKAZYWAĆ NA WPR PINU
+        platnosc_karto = STALA_PLT_KARTO_NORMAL + STALA_WPR_PIN if klient.num_produkt > 20 else STALA_PLT_KARTO_NORMAL
+            
+        self.platnosc = platnosc_karto if klient.platnosc_karto else STALA_PLT_GOTOWKO
 
         # roznica czyli czy pakowanie zajmie mi dłużej niż kasowanie kasjerki
         roznica = (STALA_PAKOWANIA * self.initial_ilosc_prod) - (self.t_na_produkt * self.initial_ilosc_prod)
 
         # czas po zakończeniu kasowania
-        self.kasa_checkout = self.rodzaj_platnosci + (0 if roznica <= 0 else roznica)
+        self.kasa_checkout = self.platnosc + (0 if roznica <= 0 else roznica)
 
         # GIGA WAŻNE - OBLICZENIE WSTĘPNE OBSŁUŻENIA KASY:
         self.czas_obslugi = round(self.t_na_produkt * self.initial_ilosc_prod + self.kasa_checkout)
@@ -299,8 +321,13 @@ class KasaObslugowa:
 class ZbiorKasyObslugowe:
     def __init__(self, ilosc_kas):
         self.ilosc_kas = ilosc_kas
+        self.interwal = INTERWAL
+        
+        # DANE ZEBRANE:
         self.ilosc_obsluzonych_klient = 0
-
+        self.dlg_kolejek_interwal = [(i, []) for i in range(ilosc_kas)]
+        
+        
         # TWORZENIE LIST PAR: ( KASA, KOLEJKA )
         self.lista_kasa_x_kolejka = [(KasaObslugowa(), Queue())
                                      for _ in range(ilosc_kas)]
@@ -317,7 +344,15 @@ class ZbiorKasyObslugowe:
         # Przydziel klienta do najkrótszej kolejki
         self.lista_kasa_x_kolejka[index_min][1].put(klient)
 
-    def odczekaj_tick_wszyscy(self):
+    def odczekaj_tick_wszyscy(self, true_czas: int):
+        def zapisz_dlg_kolejek(true_czas):
+            if true_czas % self.interwal == 0:
+                
+                # DO ZMIANY - DODANIE DLG KOLEJEK W CZASIE ( W INTERWAŁACH )
+                
+                for i, dlg_kolejki in range(self.ilosc_kas):
+                    self.dlg_kolejek_interwal[]
+                
         # Odczekujemy po wszystkich kasach TICK
         for i in range(self.ilosc_kas):
             self.lista_kasa_x_kolejka[i][0].odczekaj_tick()
@@ -337,26 +372,102 @@ class ZbiorKasyObslugowe:
                 continue
             # teraz sprawdzamy czy kasa jest pusta
             if not kasa_kolejka[0].is_with_klient:
+                # dodajemy klienta do kasy
                 self.lista_kasa_x_kolejka[i][0].przyjmij_klienta(self.lista_kasa_x_kolejka[i][1].get())
+                # zwiększamy licznik
+                self.ilosc_obsluzonych_klient += 1
+    
+    def infolist_czas_obslugi(self) -> list[tuple]:
+        list_obsluga_kl = []
+        for i, kasa_kolejka in enumerate(self.lista_kasa_x_kolejka):
+            list_obsluga_kl.append( (i, kasa_kolejka[0].lista_czasow_obslugi) ) # [ (1, [278, 283, 929, ...])]
+        return list_obsluga_kl
+    
 
-def czas_nast_klient(lamb: float) -> int:
+# WRAPPER DO MAIN - Wybór zbioru klasy
+def stworz_zb_kas(liczba_kas_samoobs: int, liczba_kas_obs: int) -> dict[ZbiorKasyObslugowe | ZbiorKasySamoobslugowe]:
+    """Tworzymy obiekt ZB_KAS ktory wrappuje kasy samoobslugowe i obslugowe
+
+    Args:
+        liczba_kas_samoobs (int): parametr do tworzenia obiektu ZbiorKasySamoobslugowe
+        liczba_kas_obs (int): parametr do tworzenia obiektu ZbiorKasyObs
+
+    Returns:
+        zb_kas (dict): Dict zaw. zbiory 2 roznych kas
+    """
+    zb_kas = {}
+    if liczba_kas_samoobs:
+        zb_kas['k_s'] = ZbiorKasySamoobslugowe(liczba_kas_samoobs)
+    if liczba_kas_obs:
+        zb_kas['k_o'] = ZbiorKasyObslugowe(liczba_kas_obs)
+    return zb_kas
+
+def wybor_rodz_kas(zb_kas: dict[ZbiorKasyObslugowe | ZbiorKasySamoobslugowe], klient: Klient):
+    """Ta funkcja będzie stwierdzać, do którego zbioru kas powinien byc Klient przydzielony
+        Zakładamy, że klient ZAWSZE wybiera KRÓTSZĄ KOLEJKĘ, ponieważ jest mu obojętne, gdzie pójdzie
+        Można też dodać założenia z wiekiem, wielkością zakupów itd ALE TO SIE ZOBAAACZY
+        
+    Args:
+        zb_k_obslugowe (ZbiorKasyObslugowe): obiekt klasy Zbiorowej dla kas obsługowych 
+        zb_k_samoobslugowe (ZbiorKasySamoobslugowe): obiekt klasy Zbiorowej dla kas samoobsługowych
+        klient (Klient): obiekt klasy Klient który będzie przydzielany
+    Returns:
+        klucz (str): klucz odpowiedniej klasy
+    """
+    # przypadek gdy nie ma kas określonych
+    if len(zb_kas.keys()) == 0:
+        raise Exception("BRAK LICZBY KAS -> NIE MA SKLEPU")
+    
+    
+    # jezeli tylko jeden rodzaj kasy jest dostępny -> od razu przydziel klienta
+    if len(zb_kas.keys()) == 1:
+        key_one: str = list(zb_kas.keys())[0]
+        return key_one
+    
+    # znajdujemy dlugosc kolejki dla kas Samoobslugowych
+    dlg_kol_k_samobs = zb_kas['k_s'].kolejka.qsize()
+    
+    # znajdujemy dlugosci kolejek dla kas obslugowych - lista dlugosci kolejek
+    dlg_kol_k_obs = [kas_kol[1].qsize() for kas_kol in zb_kas['k_o'].lista_kasa_x_kolejka]
+    
+    # porównujemy kolejki ze zbiorów i stwierdzamy do jakiego zbioru przypisujemy 
+    
+    # WAŻNE - JEŻELI KLIENT NIE MOŻE PLACIC KARTO -> PRZYDZIEL DO KAS OBSLUGOWYCH
+    if not klient.platnosc_karto:
+        zb_kas['k_o'].klienci_do_kolejki(klient)
+        return
+    
+    # Jeżeli jakakolwiek kolejka będzie krótsza od tych z samoobsługowej, to przypisz do zbioru obsługowej
+    for dlg_kol in dlg_kol_k_obs:
+        if dlg_kol < dlg_kol_k_samobs:
+            # jezeli jakakolwiek kolejka do obslogowych jest krotsza od bezobsl. to przydziela do tego zbioru
+            zb_kas['k_o'].klienci_do_kolejki(klient)
+            break
+    else:
+        # jezeli nie znajdzie sie taka klasa, to przydzielamy do kas samoobs.
+        zb_kas['k_s'].klienci_do_kolejki(klient)
+    return
+
+
+
+def int_dist_exp(lamb: float) -> int:
     # wylosuj ilosc sekund do przyjscia nastepnego klienta
     return round(exponential(1/lamb))
 
-def test_exp():
+def exponential_test(lam: float, czas: int) -> int:
     # dla takiej wartości w miare działa, ale wciąż są potrzebne dokładniejsze badania
     # ok. 350 klientów na 3600 sekund
-    LAM = 0.1
+    
     # zmienne
     klient_counter = 0
     next_klient_count = 0
     
-    for i in range(3600):
+    for _ in range(czas):
         if next_klient_count <= 0:
-            next_klient_count = czas_nast_klient(LAM)
+            next_klient_count = int_dist_exp(lam)
             klient_counter += 1
         next_klient_count -= 1
-    print(f"Klient counter: {klient_counter}")
+    return klient_counter
 
 def test():
     """
@@ -374,9 +485,9 @@ def test():
                   't_na_prod': 1,
                   'platnosc_karto': True}
     
-    test_klienty: Klient = [ Klient(param=param_test_gen()) for _ in range(180) ]
+    test_klienty: list[Klient] = [ Klient(param=param_test_gen()) for _ in range(180) ]
     
-    zb_kasy_obs = ZbiorKasyObslugowe(20)
+    zb_kasy_obs = ZbiorKasyObslugowe(4)
 
     for klient in test_klienty:
         zb_kasy_obs.klienci_do_kolejki(klient)
@@ -389,12 +500,20 @@ def test():
         i += 1
         zb_kasy_obs.aktualizacja_kas()
         zb_kasy_obs.odczekaj_tick_wszyscy()
-        print("tick")
+        # print("tick")
     print(i)
+    
+    print(f"Obsluzeni klienci: {zb_kasy_obs.ilosc_obsluzonych_klient}")
+    print(f"Czas obslugi: {zb_kasy_obs.infolist_czas_obslugi()}")
+    
+    spr = [sum(x[1]) for x in zb_kasy_obs.infolist_czas_obslugi()]
+    print(f"spr: {spr}")
     print('end')
     
     
 
 if __name__ == "__main__":
-    # test()
-    test_exp()
+    test()
+    # for i in range(5):
+    #     print(f"\n\tTEST {i}")
+    #     exponential_test()

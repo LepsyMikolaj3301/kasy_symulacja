@@ -1,5 +1,6 @@
 {
     "liczba_kas_samo_obs": 5,
     "liczba_kas_obs": 10,
-    "czas_sym": 55800
+    "czas_sym": 55800,
+    "lambda": 1.0
 }
