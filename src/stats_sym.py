@@ -9,6 +9,12 @@ Potrzeba statystyk dotyczacych:
 import numpy as np
 import util_klasy as uk
 
+def stats():
+    # ŚREDNI CZAS OBSŁUGI KLIENTA (OBS/SOBS)
+    mean_czas_na_klient__k_o = 0
+    mean_czas_na_klient__k_s = 0
+    # ŚREDNIA DLUGOSC KOLEJKI
+
 
 if __name__ == '__main__':
     

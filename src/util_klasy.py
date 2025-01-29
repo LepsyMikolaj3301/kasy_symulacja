@@ -41,7 +41,7 @@ STALA_PLT_KARTO_NORMAL = 12.5  # czas zapłacenia kartą
 STALA_WPR_PIN = 14.5 # czas wprowadzania pinu
 STALA_PLT_GOTOWKO = 34  # czas zapłacenia gotówką
 STALA_KASOWANIA_EKSPERT = 2  # czas skasowania jednego produktu przez kasjera
-INTERWAL = 10 
+INTERWAL = 10
 
 
 class Klient:
@@ -49,7 +49,7 @@ class Klient:
     Klasa będzie służyła jako bardziej kontener informacji ( struct )
     """
 
-    def __init__(self, param):
+    def __init__(self, param=None):
         """
         Args:
             wiek (int): Wiek losowany zgodnie z demografią miasta Wrocławia (2022)
@@ -162,7 +162,6 @@ class Klient:
 
         if param:
             self.wiek = param['wiek']
-            self.wiek = '0'
             self.num_produkt = param['num_produkt']
             self.t_na_prod = param['t_na_prod']
             self.platnosc_karto = param['platnosc_karto']
@@ -172,7 +171,12 @@ class Klient:
             self.num_produkt = random_groceries_amount(self.wielk_zakupow)
             self.t_na_prod = czas_skan_bez_ujemnych()
             self.platnosc_karto = czy_karta(self.wiek)
-
+    
+    # def __str__(self):
+    #     print(f'Wiek: {self.wiek}')
+    #     print(f'Num_prod: {self.num_produkt}')
+    #     print(f't_na_prod: {self.t_na_prod}')
+    #     print(f'Karto: {self.platnosc_karto}')
 
 
 
@@ -235,7 +239,7 @@ class ZbiorKasySamoobslugowe:
     def odczekaj_tick_wszyscy(self, true_czas):
         # odczytanie długości kolejki
         def zapisz_dlg_kolejki():
-            self.dlg_kolejek_interwal.append(self.kolejka._qsize)
+            self.dlg_kolejek_interwal.append(self.kolejka.qsize())
         
         for i in range(self.ilosc_kas):
             self.lista_kas[i].odczekaj_tick()
@@ -357,9 +361,9 @@ class ZbiorKasyObslugowe:
         
         def zapisz_dlg_kolejek():
             # zapisujemy w danym interwale wszystkie długości kolejek, do każdej kasy
-            for i, kasa_kolej in range(self.lista_kasa_x_kolejka):
-                kolej: Queue = kasa_kolej[0]
-                self.dlg_kolejek_interwal[i][1].append(kolej._qsize)
+            for i, kasa_kolej in enumerate(self.lista_kasa_x_kolejka):
+                kolej: Queue = kasa_kolej[1]
+                self.dlg_kolejek_interwal[i][1].append(kolej.qsize())
             
         # Odczekujemy po wszystkich kasach TICK
         for i in range(self.ilosc_kas):
@@ -428,15 +432,21 @@ def wybor_rodz_kas(zb_kas: dict[ZbiorKasyObslugowe | ZbiorKasySamoobslugowe], kl
     Returns:
         klucz (str): klucz odpowiedniej klasy
     """
+    
+    
+    # PRZYPADKI SKRAJNE
     # przypadek gdy nie ma kas określonych
     if len(zb_kas.keys()) == 0:
         raise Exception("BRAK LICZBY KAS -> NIE MA SKLEPU")
     
-    
     # jezeli tylko jeden rodzaj kasy jest dostępny -> od razu przydziel klienta
     if len(zb_kas.keys()) == 1:
-        key_one: str = list(zb_kas.keys())[0]
-        return key_one
+        zb_kas[list(zb_kas.keys())[0]].klienci_do_kolejki(klient)
+    
+     # WAŻNE - JEŻELI KLIENT NIE MOŻE PLACIC KARTO -> PRZYDZIEL DO KAS OBSLUGOWYCH
+    if not klient.platnosc_karto:
+        zb_kas['k_o'].klienci_do_kolejki(klient)
+        return
     
     # znajdujemy dlugosc kolejki dla kas Samoobslugowych
     dlg_kol_k_samobs = zb_kas['k_s'].kolejka.qsize()
@@ -445,12 +455,7 @@ def wybor_rodz_kas(zb_kas: dict[ZbiorKasyObslugowe | ZbiorKasySamoobslugowe], kl
     dlg_kol_k_obs = [kas_kol[1].qsize() for kas_kol in zb_kas['k_o'].lista_kasa_x_kolejka]
     
     # porównujemy kolejki ze zbiorów i stwierdzamy do jakiego zbioru przypisujemy 
-    
-    # WAŻNE - JEŻELI KLIENT NIE MOŻE PLACIC KARTO -> PRZYDZIEL DO KAS OBSLUGOWYCH
-    if not klient.platnosc_karto:
-        zb_kas['k_o'].klienci_do_kolejki(klient)
-        return
-    
+
     # Jeżeli jakakolwiek kolejka będzie krótsza od tych z samoobsługowej, to przypisz do zbioru obsługowej
     for dlg_kol in dlg_kol_k_obs:
         if dlg_kol < dlg_kol_k_samobs:
@@ -487,6 +492,9 @@ def test():
     """
     DO TESTOWANIA GŁÓWNEJ LOGIKI
     """
+    
+    from matplotlib import pyplot as plt
+    
     def param_test_gen():
         param = {'wiek': random.randint(7, 90),
                  'num_produkt': random.randint(1, 40),
@@ -499,29 +507,43 @@ def test():
                   't_na_prod': 1,
                   'platnosc_karto': True}
     
-    test_klienty: list[Klient] = [ Klient(param=param_test_gen()) for _ in range(180) ]
+    test_klienty: list[Klient] = [ Klient(param=None) for _ in range(180) ]
     
-    zb_kasy_obs = ZbiorKasyObslugowe(4)
+    zb_kas = stworz_zb_kas(liczba_kas_obs=2, liczba_kas_samoobs=9)
 
     for klient in test_klienty:
-        zb_kasy_obs.klienci_do_kolejki(klient)
+        wybor_rodz_kas(zb_kas, klient)
 
     i = 0 
 
 
     # WYKMINIONA LOGIKA - TRZEBA ŁADNIE OPISAĆ !!
-    while not zb_kasy_obs.war_koniec():
+    while not (zb_kas['k_o'].war_koniec() and zb_kas['k_s'].war_koniec()):
         i += 1
-        zb_kasy_obs.aktualizacja_kas()
-        zb_kasy_obs.odczekaj_tick_wszyscy()
-        # print("tick")
+        zb_kas['k_o'].aktualizacja_kas()
+        zb_kas['k_s'].aktualizacja_kas()
+        zb_kas['k_o'].odczekaj_tick_wszyscy(i)
+        zb_kas['k_s'].odczekaj_tick_wszyscy(i)
+        print("tick")
     print(i)
     
-    print(f"Obsluzeni klienci: {zb_kasy_obs.ilosc_obsluzonych_klient}")
-    print(f"Czas obslugi: {zb_kasy_obs.infolist_czas_obslugi()}")
+    print(f"Obsluzeni klienci k_o: {zb_kas['k_o'].ilosc_obsluzonych_klient}")
+    print(f"Obsluzeni klienci k_s: {zb_kas['k_s'].ilosc_obsluzonych_klient}")
+
+    print(f"Czas obslugi: {zb_kas['k_o'].infolist_czas_obslugi()[0]}")
+    print(f"dlg kolejek lista: {zb_kas['k_o'].dlg_kolejek_interwal[0]}")
     
-    spr = [sum(x[1]) for x in zb_kasy_obs.infolist_czas_obslugi()]
-    print(f"spr: {spr}")
+    print(f"Czas obslugi: {zb_kas['k_s'].infolist_czas_obslugi()[0]}")
+    print(f"dlg kolejek lista: {zb_kas['k_s'].dlg_kolejek_interwal}")
+    
+    x = zb_kas['k_o'].dlg_kolejek_interwal[0][1]
+    xx = zb_kas["k_o"].infolist_czas_obslugi()[0][1]
+    plt.plot(xx)
+    plt.show()
+    
+    
+    # spr = [sum(x[1]) for x in zb_kasy_obs.infolist_czas_obslugi()]
+    # print(f"spr: {spr}")
     print('end')
     
     
