@@ -172,6 +172,14 @@ class Klient:
             self.t_na_prod = czas_skan_bez_ujemnych()
             self.platnosc_karto = czy_karta(self.wiek)
     
+    def get_all_info(self) -> dict:
+        info = {}
+        info['wiek'] = self.wiek
+        info['wielk_zakupow'] = self.wielk_zakupow
+        info['num_produkt'] = self.num_produkt
+        info['t_na_prod'] = self.t_na_prod
+        info['platnosc_karto'] = self.platnosc_karto
+        return info
     # def __str__(self):
     #     print(f'Wiek: {self.wiek}')
     #     print(f'Num_prod: {self.num_produkt}')

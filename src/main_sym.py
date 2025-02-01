@@ -174,7 +174,7 @@ class Symulacja:
                 uk.wybor_rodz_kas(zb_kas, klient)
                 
                 # ZAPISANIE KLIENTA DO OBIEKTU
-                self.klients_list.append(klient)
+                self.klients_list.append(klient.get_all_info())
                 # wylosowanie nowego czasu do kolejnego klienta
                 czas_for_klient = uk.int_dist_exp(self.lambd)
             
@@ -235,9 +235,15 @@ def save_simulation(obj: Symulacja, file_name: str):
         obj (Symulacja): Obiekt symulacji
     """
     
-    f_name = '\\'.join('sym_saved', file_name)
-    with open(CUR_DIR + '\\' + f_name, 'a') as file:
-        file.write(obj.__dict__)
+    f_name = '\\'.join(['sym_saved', file_name])
+    
+    if os.path.exists(CUR_DIR + '\\' + f_name):
+        modem = 'w'
+    else:
+        modem = 'a'
+    
+    with open(CUR_DIR + '\\' + f_name, mode=modem) as file:
+        json.dump(obj.__dict__, file, indent=6)
         print(f'Object {type(obj).__name__} saved to {file_name}')
     
 
@@ -250,11 +256,13 @@ def test():
     params = {"liczba_kas_samo_obs": 10,
               "liczba_kas_obs": 5,
               "czas_sym": 40_500,
-              "lambda": 0.14 }
+              "lambda": 0.3 }
     
     sym_test = Symulacja(params=params)
     sym_test.symulacja()
-    # sym_test.print_result()
+    sym_test.print_result()
+    
+    save_simulation(sym_test, 'sym_test.json')
     
 def main():
     
