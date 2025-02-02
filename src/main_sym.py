@@ -221,9 +221,11 @@ class Symulacja:
                             \n\tLambda: {self.lambd}""")
         print('-  -' * 10)
         print(f'''WYNIKI: \n\tRealny Czas symulacji: {self.czas_sym}
-                          \n\tIlosc klientow obsluzonych w roznych rodzajach (OBS \ SOBS): {self.num_klient__k_o} \ {self.num_klient__k_s}
-                          \n\tCzasy obslugi klientow (OBS \ SOBS): {self.czas_obsl_kl__k_o[0]} \ {self.czas_obsl_kl__k_s[0]}
-                          \n\tDlugosci kolejek (OBS \ SOBS): {self.dlg_kolej__k_o[0]} \ {self.dlg_kolej__k_s}''')
+                          \n\tIlosc klientow obsluzonych w roznych rodzajach (OBS \\ SOBS): {self.num_klient__k_o} / {self.num_klient__k_s}
+                          ''', end='')
+        # print(f"""        \n\tCzasy obslugi klientow (OBS \\ SOBS): {self.czas_obsl_kl__k_o[0]} / {self.czas_obsl_kl__k_s[0]}
+                        #   \n\tDlugosci kolejek (OBS \\ SOBS): {self.dlg_kolej__k_o[0]} / {self.dlg_kolej__k_s}""")
+        print(f"Najdlg Kolejka: {max(self.dlg_kolej__k_s)}")
         print(f"Klienci liczba: {len(self.klients_list)}")
               
     
@@ -253,23 +255,24 @@ def test():
     Testy xd
     
     """
-    params = {"liczba_kas_samo_obs": 10,
-              "liczba_kas_obs": 5,
-              "czas_sym": 40_500,
-              "lambda": 0.3 }
+    params = {"liczba_kas_samo_obs": 8,
+              "liczba_kas_obs": 3,
+              "czas_sym": 60_500,
+              "lambda": 0.05 }
     
     sym_test = Symulacja(params=params)
     sym_test.symulacja()
     sym_test.print_result()
     
-    save_simulation(sym_test, 'sym_test.json')
+    # save_simulation(sym_test, 'sym_test.json')
     
 def main():
     
     # TODO: 
     #   - zautomatyzowanie robienia symulacji
-    # 
-    # 1
+    #     
+    #   1. Wszystkie wersje parametrow:
+    #       
     pass
 
 

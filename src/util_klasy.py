@@ -34,6 +34,7 @@ TODO:
 import random
 from queue import Queue
 from numpy.random import normal, exponential
+from math import sin
 
 # STAŁE GLOBALNE
 STALA_PAKOWANIA = 2.5 # mniej więcej określenie, ile pakuje się jeden produkt
@@ -172,14 +173,6 @@ class Klient:
             self.t_na_prod = czas_skan_bez_ujemnych()
             self.platnosc_karto = czy_karta(self.wiek)
     
-    def get_all_info(self) -> dict:
-        info = {}
-        info['wiek'] = self.wiek
-        info['wielk_zakupow'] = self.wielk_zakupow
-        info['num_produkt'] = self.num_produkt
-        info['t_na_prod'] = self.t_na_prod
-        info['platnosc_karto'] = self.platnosc_karto
-        return info
     # def __str__(self):
     #     print(f'Wiek: {self.wiek}')
     #     print(f'Num_prod: {self.num_produkt}')
@@ -481,20 +474,26 @@ def int_dist_exp(lamb: float) -> int:
     # wylosuj ilosc sekund do przyjscia nastepnego klienta
     return round(exponential(1/lamb))
 
-def exponential_test(lam: float, czas: int) -> int:
-    # dla takiej wartości w miare działa, ale wciąż są potrzebne dokładniejsze badania
-    # ok. 350 klientów na 3600 sekund
-    
-    # zmienne
-    klient_counter = 0
-    next_klient_count = 0
-    
-    for _ in range(czas):
-        if next_klient_count <= 0:
-            next_klient_count = int_dist_exp(lam)
-            klient_counter += 1
-        next_klient_count -= 1
-    return klient_counter
+def int_dist_exp_sin(t: int, lamb_0: float, amp: float, omega: float) -> int:
+    """FUNKCJA ZWRACAJĄCA CZAS OCZEKIWANIA DO KOLEJNEGO KLIENTA
+
+        NADANA WZOREM: 
+        X ~ Exp(lambd_t)
+        p(x | t) = lam_t*e^(-lam_t*x)
+        gdzie: lam_t = lamb_0 * ( (1 + amp*sin(omega * t))**2 ) 
+
+    Args:
+        t (int): czas globalny
+        lamb_0 (float): lambda 0
+        amp (float): amplituda efektu sinusoidalnego
+        omega (float): częstotliwość --"--
+
+    Returns:
+        int: zaokrąglony sample rozkładu
+    """
+    lam_t = lamb_0*((1 + amp*sin(omega * t))**2)
+    return round(exponential(1/lam_t))
+
 
 def test():
     """
