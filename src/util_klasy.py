@@ -37,12 +37,12 @@ from numpy.random import normal, exponential
 from math import sin
 
 # STAŁE GLOBALNE
-STALA_PAKOWANIA = 2.5 # mniej więcej określenie, ile pakuje się jeden produkt
+STALA_PAKOWANIA = 6 # mniej więcej określenie, ile pakuje się jeden produkt ZMIANA
 STALA_PLT_KARTO_NORMAL = 12.5  # czas zapłacenia kartą
 STALA_WPR_PIN = 14.5 # czas wprowadzania pinu
 STALA_PLT_GOTOWKO = 34  # czas zapłacenia gotówką
-STALA_KASOWANIA_EKSPERT = 2  # czas skasowania jednego produktu przez kasjera
-INTERWAL = 10
+STALA_KASOWANIA_EKSPERT = 4  # czas skasowania jednego produktu przez kasjera ZMIANA
+INTERWAL = 5
 
 
 class Klient:
@@ -120,10 +120,10 @@ class Klient:
 
             # Przyjęte przez nas ilości produktów dla małych, średnich i dużych zakupów
             zakresy_ilosci_produktow = {
-                "male": {"min": 1, "max": 10},
+                "male": {"min": 5, "max": 10}, # ZMIANA
                 "srednie": {"min": 11, "max": 25},
                 "duze": {"min": 26, "max": 50},
-                "random": {"min": 1, "max": 50}
+                "random": {"min": 5, "max": 50}
             }
 
             minimum = zakresy_ilosci_produktow[size]["min"]
@@ -137,7 +137,7 @@ class Klient:
 
             while not number_generated:
                 # 
-                czas_skan = normal(4.5, 1)
+                czas_skan = normal(7, 1) # ZMIANA
                 if czas_skan >= STALA_KASOWANIA_EKSPERT:  # Akceptujemy tylko wartości > 2, bo klienci szybciej nie skanują
                     number_generated = True
 
@@ -173,11 +173,14 @@ class Klient:
             self.t_na_prod = czas_skan_bez_ujemnych()
             self.platnosc_karto = czy_karta(self.wiek)
     
-    # def __str__(self):
-    #     print(f'Wiek: {self.wiek}')
-    #     print(f'Num_prod: {self.num_produkt}')
-    #     print(f't_na_prod: {self.t_na_prod}')
-    #     print(f'Karto: {self.platnosc_karto}')
+    def get_all_info(self) -> dict:
+        info = {}
+        info['wiek'] = self.wiek
+        info['wielk_zakupow'] = self.wielk_zakupow
+        info['num_produkt'] = self.num_produkt
+        info['t_na_prod'] = self.t_na_prod
+        info['platnosc_karto'] = self.platnosc_karto
+        return info    
 
 
 
@@ -468,11 +471,6 @@ def wybor_rodz_kas(zb_kas: dict[ZbiorKasyObslugowe | ZbiorKasySamoobslugowe], kl
         zb_kas['k_s'].klienci_do_kolejki(klient)
     return
 
-
-
-def int_dist_exp(lamb: float) -> int:
-    # wylosuj ilosc sekund do przyjscia nastepnego klienta
-    return round(exponential(1/lamb))
 
 def int_dist_exp_sin(t: int, lamb_0: float, amp: float, omega: float) -> int:
     """FUNKCJA ZWRACAJĄCA CZAS OCZEKIWANIA DO KOLEJNEGO KLIENTA

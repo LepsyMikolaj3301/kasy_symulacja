@@ -1,6 +1,52 @@
-{
-    "liczba_kas_samo_obs": 5,
-    "liczba_kas_obs": 10,
-    "czas_sym": 55800,
-    "lambda": 1.0
+{   
+    "schematy_symulacji": [
+        {
+            "liczba_kas_samo_obs": 3,
+            "liczba_kas_obs": 2,
+            "czas_sym": 57600,
+            "lambda_amp_czest": [0.081, 0.765, 1]
+        },
+        {
+            "liczba_kas_samo_obs": 3,
+            "liczba_kas_obs": 4,
+            "czas_sym": 57600,
+            "lambda_amp_czest": [0.081, 0.765, 1]
+        },
+        {
+            "liczba_kas_samo_obs": 8,
+            "liczba_kas_obs": 2,
+            "czas_sym": 57600,
+            "lambda_amp_czest": [0.081, 0.765, 1]
+        },
+        {
+            "liczba_kas_samo_obs": 8,
+            "liczba_kas_obs": 4,
+            "czas_sym": 57600,
+            "lambda_amp_czest": [0.081, 0.765, 1]
+        },
+        {
+            "liczba_kas_samo_obs": 3,
+            "liczba_kas_obs": 2,
+            "czas_sym": 57600,
+            "lambda_amp_czest": [0.158, 0.765, 1]
+        },
+        {
+            "liczba_kas_samo_obs": 3,
+            "liczba_kas_obs": 4,
+            "czas_sym": 57600,
+            "lambda_amp_czest": [0.158, 0.765, 1]
+        },
+        {
+            "liczba_kas_samo_obs": 8,
+            "liczba_kas_obs": 2,
+            "czas_sym": 57600,
+            "lambda_amp_czest": [0.158, 0.765, 1]
+        },
+        {
+            "liczba_kas_samo_obs": 8,
+            "liczba_kas_obs": 4,
+            "czas_sym": 57600,
+            "lambda_amp_czest": [0.158, 0.765, 1]
+        }
+    ]
 }

@@ -50,6 +50,7 @@ TODO:
 import json
 import util_klasy as uk
 import os
+from matplotlib import pyplot as plt
 
 
 
@@ -69,9 +70,7 @@ def odczyt_pliku_ster() -> dict:
         parametry = json.load(file)
         return parametry
     
- 
 
-      
 class Symulacja:
 
     def __init__(self, params: dict):
@@ -79,15 +78,15 @@ class Symulacja:
         self.czas_sym_pred = params['czas_sym']
         self.liczba_kas_samo_obs = params['liczba_kas_samo_obs']
         self.liczba_kas_obs = params['liczba_kas_obs']
-        self.lambd = params['lambda']
-        
+        self.lambd, self.amp, self.czest = params['lambda_amp_czest']
         
         # DANE ZEBRANE Z SYMULACJI
         
         # REALNA DŁUGOŚĆ SYMULACJI
         self.czas_sym = 0
         # ZAPISANI KLIENCI
-        self.klients_list = []       
+        self.klients_list = []      
+        self.num_generared_list = [] 
         
         # ILOSC KLIENTOW OBSLUZONYCH W ZBIORACH
         self.num_klient__k_o = 0
@@ -151,6 +150,9 @@ class Symulacja:
         # czas do następnego klienta
         czas_for_klient = 0
         
+        # ilosc utworzonych klientow w danym interwale
+        self.num_gen = 0
+        
         # warunek zakończenia symulacji
         def koniec():
             if czas_sym > czas_sym_pred and (zb_kas['k_o'].war_koniec() and zb_kas['k_s'].war_koniec()):
@@ -159,7 +161,17 @@ class Symulacja:
             else:
                 return False
         
-        
+        # Akcja dodawania klienta do kasy
+        def dodaj_klienta():
+            # stworzenie klienta
+            klient = uk.Klient()
+            # dodanie klienta do kasy
+            uk.wybor_rodz_kas(zb_kas, klient)
+            # ZAPISANIE KLIENTA DO OBIEKTU
+            self.klients_list.append(klient.get_all_info())
+            # dodanie do licznika interwału
+            self.num_gen += 1
+    
             
         # 2. GŁÓWNA PĘTLA SYMULACJI
         print(f"\tSYM START\n")
@@ -168,15 +180,11 @@ class Symulacja:
             
             # 2.1 Czy pora na przyjście następnego klienta (pod warunkiem, że nasz sklep jest wciąż otwarty)
             if czas_for_klient <= 0 and czas_sym < czas_sym_pred:
-                # stworzenie klienta
-                klient = uk.Klient()
-                # dodanie klienta do kasy
-                uk.wybor_rodz_kas(zb_kas, klient)
-                
-                # ZAPISANIE KLIENTA DO OBIEKTU
-                self.klients_list.append(klient.get_all_info())
+                dodaj_klienta()
                 # wylosowanie nowego czasu do kolejnego klienta
-                czas_for_klient = uk.int_dist_exp(self.lambd)
+                # czas_for_klient = uk.int_dist_exp_sin(czas_sym, self.lambd, self.amp, self.czest)
+                while (czas_for_klient := uk.int_dist_exp_sin(czas_sym, self.lambd, self.amp, self.czest)) == 0:
+                    dodaj_klienta()
             
             # 2.2 Aktualizacja stanu kas
             zb_kas['k_o'].aktualizacja_kas()
@@ -189,8 +197,16 @@ class Symulacja:
             czas_sym += 1
             czas_for_klient -= 1
             
-            if czas_sym % self.czas_sym_pred // 10 == 0:
+            # dodatkowe ify
+            
+            if czas_sym % (self.czas_sym_pred // 10) == 0:
                 print('.', end='')
+            
+            # zapisanie informacji o przyjściu klienta ( do wykresu )
+            if czas_sym % uk.INTERWAL == 0:
+                self.num_generared_list.append(self.num_gen)
+                self.num_gen = 0
+            
         print(f'\n\tSYM END')
         
         # 3. Zapisanie INFORMACJI        
@@ -222,16 +238,16 @@ class Symulacja:
         print('-  -' * 10)
         print(f'''WYNIKI: \n\tRealny Czas symulacji: {self.czas_sym}
                           \n\tIlosc klientow obsluzonych w roznych rodzajach (OBS \\ SOBS): {self.num_klient__k_o} / {self.num_klient__k_s}
-                          ''', end='')
+                          ''')
         # print(f"""        \n\tCzasy obslugi klientow (OBS \\ SOBS): {self.czas_obsl_kl__k_o[0]} / {self.czas_obsl_kl__k_s[0]}
                         #   \n\tDlugosci kolejek (OBS \\ SOBS): {self.dlg_kolej__k_o[0]} / {self.dlg_kolej__k_s}""")
-        print(f"Najdlg Kolejka: {max(self.dlg_kolej__k_s)}")
+        print(f"Najdlg Kolejka k_s: {max(self.dlg_kolej__k_s)} w sekundzie: {self.dlg_kolej__k_s.index(max(self.dlg_kolej__k_s))}")
         print(f"Klienci liczba: {len(self.klients_list)}")
-              
+    
     
 # Informacje o symulacji będą zapisywane jako pliki json
 def save_simulation(obj: Symulacja, file_name: str):
-    """Zapisuje obiekt symulacji w pickle
+    """Zapisuje obiekt symulacji w JSON
 
     Args:
         obj (Symulacja): Obiekt symulacji
@@ -239,10 +255,7 @@ def save_simulation(obj: Symulacja, file_name: str):
     
     f_name = '\\'.join(['sym_saved', file_name])
     
-    if os.path.exists(CUR_DIR + '\\' + f_name):
-        modem = 'w'
-    else:
-        modem = 'a'
+    modem = 'w' if os.path.exists(CUR_DIR + '\\' + f_name) else 'a'
     
     with open(CUR_DIR + '\\' + f_name, mode=modem) as file:
         json.dump(obj.__dict__, file, indent=6)
@@ -255,10 +268,11 @@ def test():
     Testy xd
     
     """
-    params = {"liczba_kas_samo_obs": 8,
-              "liczba_kas_obs": 3,
-              "czas_sym": 60_500,
-              "lambda": 0.05 }
+    params = {"liczba_kas_samo_obs": 5,
+              "liczba_kas_obs": 2,
+              "czas_sym": 57_600,
+              "lambda_amp_czest": [ 0.21, 0.87, 1 ]
+              }
     
     sym_test = Symulacja(params=params)
     sym_test.symulacja()
@@ -271,10 +285,24 @@ def main():
     # TODO: 
     #   - zautomatyzowanie robienia symulacji
     #     
+    
+    
     #   1. Wszystkie wersje parametrow:
-    #       
+    config_sym: list = odczyt_pliku_ster()['schematy_symulacji']
+    
+    #   2. Przeprowadzenie wszystkich symulacji
+    for index, conf in enumerate(config_sym):
+        sym: Symulacja = Symulacja(params=conf)
+        sym.symulacja()
+        print(f"\n\t\tSYMULACJA NR {index}")
+        # sym.print_result()
+        save_simulation(sym, 'sym_' + str(index) + '.json')
+        print('\n')
+        
+    #   3. koniec
+    print("ALL SYMS SUCCESS")
     pass
 
 
 if __name__ == "__main__":
-    test()
+    main()

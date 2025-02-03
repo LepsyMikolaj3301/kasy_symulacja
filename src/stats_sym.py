@@ -45,9 +45,9 @@ def gmma_test():
     plt.grid(True)
     plt.show()
  
-def test_kurwa(lam, czas):
+def test_nowy_rozklad(czas, lam, amplituda, czest):
     
-    interwal = 5
+    interwal = uk.INTERWAL
     klienci_x = []
     kl = 0
 
@@ -59,14 +59,15 @@ def test_kurwa(lam, czas):
             # next_klient_count = uk.int_dist_exp_sin(i, lam, 3, 0.1)
             # uk.int_dist_exp_sin(i, lam, 0.8,1)
             # uk.int_dist_exp(0.033)
-            while (next_klient_count := uk.int_dist_exp_sin(i, lam, 0.8,1)) == 0:
+            # uk.int_dist_exp_sin(i, lam, amplituda, czest)
+            while (next_klient_count := uk.int_dist_exp_sin(i, lam, amplituda, czest)) == 0:
                 kl += 1
         next_klient_count -= 1
         if i % interwal == 0:
             klienci_x.append(kl)
             kl = 0
     # print(klienci_x)
-    print(f"Suma: {sum(klienci_x)}")
+    # print(f"Suma: {sum(klienci_x)}")
     
     
     return klienci_x
@@ -99,23 +100,36 @@ def rozklad_test(lam: float, czas: int) -> int:
 
 if __name__ == '__main__':
     
-    LAM = [0.12]
-    TIME = 57_500
+    LAM = [0.081, 0.158]
+    amplit = [0.765, 0.765]
+    czestot = [1, 1]
+    TIME = 57_600
     def plocik(kl_info):
         plt.plot(kl_info)
         plt.show()
         
+    def plocik_double(kl_1, kl_2):
+        figure, axis = plt.subplots(1, 2)
+        axis[0].plot(kl_1)
+        axis[0].set_title('kl_1')
+        axis[1].plot(kl_2)
+        axis[1].set_title('kl_2')
+        plt.show()
+        
     # dane z testów:
-    for l in LAM:
-        testy = []
+    for j in range(2):
+        testy_1, testy_2 = [], []
         for i in range(1000):
-            kl_info = test_kurwa(l, TIME)
-            
-            testy.append(sum(kl_info))
+            kl_info = test_nowy_rozklad(TIME, LAM[j], amplit[j], czestot[j])
+            # kl_info_2 = test_nowy_rozklad(TIME, LAM[1], amplit[1], czestot[1])
+            testy_1.append(sum(kl_info))
+            # testy_2.append(sum(kl_info_2))
+            # plocik_double(kl_info, kl_info_2)
             # plocik(kl_info)
-        print(f"L = {l}")
-        print(f"Srednia: {np.mean(testy)}")
-        print(f"Odch_std: {np.std(testy)}")
+        # print(f"L = {LAM[j]}")
+        
+        print(f"Srednia: {np.mean(testy_1)}")
+        print(f"Odch_std: {np.std(testy_1)}")
         
     # gmma_test()
     
