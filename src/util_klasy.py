@@ -427,7 +427,7 @@ def stworz_zb_kas(liczba_kas_samoobs: int, liczba_kas_obs: int) -> dict[ZbiorKas
 def wybor_rodz_kas(zb_kas: dict[ZbiorKasyObslugowe | ZbiorKasySamoobslugowe], klient: Klient):
     """Ta funkcja będzie stwierdzać, do którego zbioru kas powinien byc Klient przydzielony
         Zakładamy, że klient ZAWSZE wybiera KRÓTSZĄ KOLEJKĘ, ponieważ jest mu obojętne, gdzie pójdzie
-        Można też dodać założenia z wiekiem, wielkością zakupów itd ALE TO SIE ZOBAAACZY
+        Można też dodać założenia z wiekiem, wielkością zakupów itd ALE TO SIE ZOBAAACZY , jednak nie robimy
         
     Args:
         zb_k_obslugowe (ZbiorKasyObslugowe): obiekt klasy Zbiorowej dla kas obsługowych 
@@ -436,7 +436,6 @@ def wybor_rodz_kas(zb_kas: dict[ZbiorKasyObslugowe | ZbiorKasySamoobslugowe], kl
     Returns:
         klucz (str): klucz odpowiedniej klasy
     """
-    
     
     # PRZYPADKI SKRAJNE
     # przypadek gdy nie ma kas określonych
@@ -459,7 +458,6 @@ def wybor_rodz_kas(zb_kas: dict[ZbiorKasyObslugowe | ZbiorKasySamoobslugowe], kl
     dlg_kol_k_obs = [kas_kol[1].qsize() for kas_kol in zb_kas['k_o'].lista_kasa_x_kolejka]
     
     # porównujemy kolejki ze zbiorów i stwierdzamy do jakiego zbioru przypisujemy 
-
     # Jeżeli jakakolwiek kolejka będzie krótsza od tych z samoobsługowej, to przypisz do zbioru obsługowej
     for dlg_kol in dlg_kol_k_obs:
         if dlg_kol < dlg_kol_k_samobs:

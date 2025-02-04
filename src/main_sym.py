@@ -268,7 +268,7 @@ def test():
     Testy xd
     
     """
-    params = {"liczba_kas_samo_obs": 5,
+    params = {"liczba_kas_samo_obs": 4,
               "liczba_kas_obs": 2,
               "czas_sym": 57_600,
               "lambda_amp_czest": [ 0.21, 0.87, 1 ]
@@ -278,7 +278,7 @@ def test():
     sym_test.symulacja()
     sym_test.print_result()
     
-    # save_simulation(sym_test, 'sym_test.json')
+    save_simulation(sym_test, 'sym_test.json')
     
 def main():
     
@@ -292,12 +292,13 @@ def main():
     
     #   2. Przeprowadzenie wszystkich symulacji
     for index, conf in enumerate(config_sym):
-        sym: Symulacja = Symulacja(params=conf)
-        sym.symulacja()
-        print(f"\n\t\tSYMULACJA NR {index}")
-        # sym.print_result()
-        save_simulation(sym, 'sym_' + str(index) + '.json')
-        print('\n')
+        for j in range(3):
+            sym: Symulacja = Symulacja(params=conf)
+            sym.symulacja()
+            print(f"\n\t\tSYMULACJA NR {index} PROBA {j}")
+            # sym.print_result()
+            save_simulation(sym, 'sym_' + str(index) + '_' + str(j) +'.json')
+            print('\n')
         
     #   3. koniec
     print("ALL SYMS SUCCESS")

@@ -12,15 +12,13 @@ from matplotlib import pyplot as plt
 from numpy.random import gamma
 from scipy.stats import gamma as gamma_p
 from math import sin
-def stats():
-    # ŚREDNI CZAS OBSŁUGI KLIENTA (OBS/SOBS)
-    mean_czas_na_klient__k_o = 0
-    mean_czas_na_klient__k_s = 0
-    # ŚREDNIA DLUGOSC KOLEJKI
-   
-def int_dist_gamma(t: int, k_0: float, scale: float, amp: float, omega: float):
-    k_t = k_0 * (1 + amp*sin(omega*t))
-    return round(gamma())
+import main_sym as ms
+
+def odczyt_json_wyniki(file_name_json) -> dict:
+    with open(ms.CUR_DIR + '\\sym_saved\\' + file_name_json , 'r') as file:
+        parametry = ms.json.load(file)
+        return parametry
+
 
 def gmma_test():
     
@@ -73,7 +71,7 @@ def test_nowy_rozklad(czas, lam, amplituda, czest):
     return klienci_x
     
             
-    
+
         
 
 def rozklad_test(lam: float, czas: int) -> int:
@@ -111,20 +109,23 @@ if __name__ == '__main__':
     def plocik_double(kl_1, kl_2):
         figure, axis = plt.subplots(1, 2)
         axis[0].plot(kl_1)
-        axis[0].set_title('kl_1')
+        axis[0].set_title('rozklad 1')
         axis[1].plot(kl_2)
-        axis[1].set_title('kl_2')
+        axis[1].set_title('rozklad 2')
+        
+        for ax in axis.flat:
+            ax.set(xlabel='czas', ylabel='licznosc kl')
         plt.show()
         
     # dane z testów:
     for j in range(2):
         testy_1, testy_2 = [], []
-        for i in range(1000):
-            kl_info = test_nowy_rozklad(TIME, LAM[j], amplit[j], czestot[j])
-            # kl_info_2 = test_nowy_rozklad(TIME, LAM[1], amplit[1], czestot[1])
+        for i in range(3):
+            kl_info = test_nowy_rozklad(TIME, LAM[0], amplit[0], czestot[0])
+            kl_info_2 = test_nowy_rozklad(TIME, LAM[1], amplit[1], czestot[1])
             testy_1.append(sum(kl_info))
             # testy_2.append(sum(kl_info_2))
-            # plocik_double(kl_info, kl_info_2)
+            plocik_double(kl_info, kl_info_2)
             # plocik(kl_info)
         # print(f"L = {LAM[j]}")
         
