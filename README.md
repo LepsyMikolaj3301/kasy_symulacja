@@ -15,7 +15,7 @@ Architektura wizualnie ( 3 kasy obs. 3 kasy samoobs.):\
 ` |Kasa obs| ... `\
 ` |Kasa obs| .... `\
 ` |k_s| |k_s| |k_s|`\
-`   .     .     .      ......`\
+`   .     .     .      ......`
 
 ## Jakie rozkłady do czego
 Do losowania klientów został wykorzystany rozkład wykładniczy z użyciem efektu sinusoidalnego znanego z wachadła matematycznego
