@@ -28,7 +28,7 @@ $$
 Do losowania parametrów klienta wykorzystujemy rozkład ważony na podstawie demografii miasta _Wrocław_ oraz rozkłady uznane wg naszego uznania, bo pasowały
 
 ## Źródła
-<https://wroclaw.stat.gov.pl/files/gfx/wroclaw/pl/defaultstronaopisowa/1880/1/2/dz_5_ludnosc_2023.pdf>
-<https://www.cbos.pl/SPISKOM.POL/2013/K_094_13.PDF>
-<https://static.nbp.pl/systemy/platniczy/Zwyczaje-platnicze-w-Polsce-2023.pdf>
+<https://wroclaw.stat.gov.pl/files/gfx/wroclaw/pl/defaultstronaopisowa/1880/1/2/dz_5_ludnosc_2023.pdf>\
+<https://www.cbos.pl/SPISKOM.POL/2013/K_094_13.PDF>\
+<https://static.nbp.pl/systemy/platniczy/Zwyczaje-platnicze-w-Polsce-2023.pdf>\
 <https://bank.pl/na-zakupy-najlepiej-bez-gotowki/>
